@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-import Sidebar from "../components/Sidebar";
+import Sidebar from "@/components/layout/Sidebar";
+import { Providers } from "@/components/layout/Providers";
+import { cn } from "@/utils/cn";
+
+const jetbrainsMono = JetBrains_Mono({subsets:['latin'],variable:'--font-mono'});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,15 +30,17 @@ export default function RootLayout({
   return (
     <html
       lang="th"
-      className={`${geistSans.variable} ${geistMono.variable}`}
+      className={cn(geistSans.variable, geistMono.variable, "font-mono", jetbrainsMono.variable)}
     >
       <body>
-        <div style={{ display: "flex" }}>
-          <Sidebar />
-          <main style={{ flex: 1, padding: "20px" }}>
-            {children}
-          </main>
-        </div>
+        <Providers>
+          <div className="flex min-h-screen">
+            <Sidebar />
+            <main className="flex-1 p-5">
+              {children}
+            </main>
+          </div>
+        </Providers>
       </body>
     </html>
   );

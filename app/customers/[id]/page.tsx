@@ -1,37 +1,83 @@
-export default function CustomerDetailPage() {
+import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import type { CustomerDetail } from "@/types/customer";
+
+interface CustomerDetailProps {
+  params: Promise<{
+    id: string;
+  }>;
+}
+
+export default async function CustomerDetailPage({ params }: CustomerDetailProps) {
+  const { id } = await params;
+
+  const customer = (await prisma.customer.findUnique({
+    where: { id: Number(id) },
+  })) as CustomerDetail | null;
+
+  if (!customer) {
+    return (
+      <main className="p-8">
+        <Card className="border border-destructive/20 bg-destructive/10 text-destructive">
+          <CardContent>ไม่พบข้อมูลลูกค้าที่ร้องขอ</CardContent>
+        </Card>
+      </main>
+    );
+  }
+
   return (
     <main className="p-8">
-
-      <h1 className="text-3xl font-bold mb-8">
-        📋 บริษัท ABC จำกัด
-      </h1>
-
-      <div className="grid grid-cols-2 gap-8">
-
-        <div className="border rounded-xl p-5">
-          <h2 className="font-bold text-xl mb-4">
-            ข้อมูลบริษัท
-          </h2>
-
-          <p>รหัส : C001</p>
-          <p>เลขผู้เสียภาษี : 0123456789012</p>
-          <p>เบอร์โทร : 0812345678</p>
-          <p>Email : abc@gmail.com</p>
-          <p>ผู้ติดต่อ : คุณสมชาย</p>
+      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">📋 {customer.companyName}</h1>
+          <p className="text-sm text-muted-foreground mt-1">รายละเอียดลูกค้าและข้อมูลบริการ</p>
         </div>
-
-        <div className="border rounded-xl p-5">
-          <h2 className="font-bold text-xl mb-4">
-            ค่าบริการ
-          </h2>
-
-          <p>ค่าบริการ : 3,000 บาท</p>
-          <p>ผู้รับผิดชอบ : Nine</p>
-          <p>สถานะ : 🟢 ใช้งาน</p>
+        <div className="flex gap-2">
+          <Link href={`/customers/edit/${customer.id}`}>
+            <Button>แก้ไข</Button>
+          </Link>
+          <Link href="/customers">
+            <Button variant="outline">กลับไป</Button>
+          </Link>
         </div>
-
       </div>
 
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>ข้อมูลบริษัท</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <p><span className="font-medium">รหัส:</span> {customer.code}</p>
+            <p><span className="font-medium">เลขผู้เสียภาษี:</span> {customer.taxId}</p>
+            <p><span className="font-medium">โทรศัพท์:</span> {customer.phone ?? "-"}</p>
+            <p><span className="font-medium">Email:</span> {customer.email ?? "-"}</p>
+            <p><span className="font-medium">ผู้ติดต่อ:</span> {customer.contactName ?? "-"}</p>
+            <p><span className="font-medium">ที่อยู่:</span> {customer.address ?? "-"}</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>ข้อมูลบริการ</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            <p><span className="font-medium">ค่าบริการ:</span> {customer.serviceFee?.toLocaleString() ?? 0} บาท</p>
+            <p><span className="font-medium">วันที่เริ่ม:</span> {customer.startDate ? new Date(customer.startDate).toLocaleDateString() : "-"}</p>
+            <p>
+              <span className="font-medium">สถานะ:</span>{" "}
+              <Badge variant={customer.status === "ใช้งาน" ? "default" : "secondary"}>
+                {customer.status}
+              </Badge>
+            </p>
+            <p><span className="font-medium">ประเภทบริการ:</span> {customer.serviceType ?? "-"}</p>
+            <p><span className="font-medium">หมายเหตุ:</span> {customer.note ?? "-"}</p>
+          </CardContent>
+        </Card>
+      </div>
     </main>
   );
 }

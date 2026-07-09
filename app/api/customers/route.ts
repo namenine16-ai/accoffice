@@ -1,12 +1,76 @@
+import type { Prisma } from "@prisma/client";
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { customerService } from "@/services/customer.service";
+import { apiErrorResponse } from "@/lib/api-error";
+
+interface CustomerCreateBody {
+  code: string;
+  companyName: string;
+  taxId: string;
+  businessType?: string | null;
+  companyRegisterNo?: string | null;
+  vatRegistered?: boolean;
+  vatNumber?: string | null;
+  address?: string | null;
+  province?: string | null;
+  postcode?: string | null;
+  contactName?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  lineId?: string | null;
+  accountant?: string | null;
+  serviceType?: string | null;
+  accountingPeriod?: string | null;
+  serviceFee?: number;
+  startDate?: string | null;
+  status?: string;
+  note?: string | null;
+  googleDriveFolder?: string | null;
+}
 
 export async function GET() {
-  const customers = await prisma.customer.findMany({
-    orderBy: {
-      id: "asc",
-    },
-  });
+  try {
+    const customers = await customerService.getAllCustomers();
 
-  return NextResponse.json(customers);
+    return NextResponse.json(customers);
+  } catch (error) {
+    return apiErrorResponse("customers.getAll", "โหลดข้อมูลไม่สำเร็จ", 500, error);
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = (await request.json()) as CustomerCreateBody;
+
+    const customerData: Prisma.CustomerCreateInput = {
+      code: body.code,
+      companyName: body.companyName,
+      taxId: body.taxId,
+      businessType: body.businessType || null,
+      companyRegisterNo: body.companyRegisterNo || null,
+      vatRegistered: body.vatRegistered ?? false,
+      vatNumber: body.vatNumber || null,
+      address: body.address || null,
+      province: body.province || null,
+      postcode: body.postcode || null,
+      contactName: body.contactName || null,
+      phone: body.phone || null,
+      email: body.email || null,
+      lineId: body.lineId || null,
+      accountant: body.accountant || null,
+      serviceType: body.serviceType || null,
+      accountingPeriod: body.accountingPeriod || null,
+      serviceFee: body.serviceFee ?? 0,
+      startDate: body.startDate ? new Date(body.startDate) : null,
+      status: body.status || "ใช้งาน",
+      note: body.note || null,
+      googleDriveFolder: body.googleDriveFolder || null,
+    };
+
+    const customer = await customerService.createCustomer(customerData);
+
+    return NextResponse.json(customer, { status: 201 });
+  } catch (error) {
+    return apiErrorResponse("customers.create", "บันทึกลูกค้าไม่สำเร็จ", 500, error);
+  }
 }
