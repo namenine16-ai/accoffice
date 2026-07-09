@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/layout/Sidebar";
@@ -30,6 +30,8 @@ export default async function RootLayout({
 }>) {
   const cookieStore = await cookies();
   const sidebarCollapsed = cookieStore.get("sidebar_collapsed")?.value === "true";
+  const headersList = await headers();
+  const isAuthPage = headersList.get("x-pathname") === "/login";
 
   return (
     <html
@@ -38,12 +40,16 @@ export default async function RootLayout({
     >
       <body>
         <Providers>
-          <div className="flex min-h-screen flex-col md:flex-row">
-            <Sidebar initialCollapsed={sidebarCollapsed} />
-            <main className="flex-1 p-5">
-              {children}
-            </main>
-          </div>
+          {isAuthPage ? (
+            children
+          ) : (
+            <div className="flex min-h-screen flex-col md:flex-row">
+              <Sidebar initialCollapsed={sidebarCollapsed} />
+              <main className="flex-1 p-5">
+                {children}
+              </main>
+            </div>
+          )}
         </Providers>
       </body>
     </html>
