@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/layout/Sidebar";
@@ -22,11 +23,14 @@ export const metadata: Metadata = {
   description: "Accounting Office Management System",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
+  const sidebarCollapsed = cookieStore.get("sidebar_collapsed")?.value === "true";
+
   return (
     <html
       lang="th"
@@ -34,8 +38,8 @@ export default function RootLayout({
     >
       <body>
         <Providers>
-          <div className="flex min-h-screen">
-            <Sidebar />
+          <div className="flex min-h-screen flex-col md:flex-row">
+            <Sidebar initialCollapsed={sidebarCollapsed} />
             <main className="flex-1 p-5">
               {children}
             </main>

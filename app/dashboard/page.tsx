@@ -10,6 +10,9 @@ import { OfficeHubPendingDocuments } from "@/components/dashboard/OfficeHubPendi
 import { OfficeHubActivityList } from "@/components/dashboard/OfficeHubActivityList";
 import { OfficeHubStats } from "@/components/dashboard/OfficeHubStats";
 import { CalendarCard } from "@/components/dashboard/CalendarCard";
+import { OfficeHubCharts } from "@/components/dashboard/OfficeHubCharts";
+import { TaxDeadlineDashboard } from "@/components/dashboard/TaxDeadlineDashboard";
+import { Button } from "@/components/ui/button";
 import type { WorkflowTask } from "@/types/workflow";
 
 type MiniTaskRow = {
@@ -97,6 +100,7 @@ export default function DashboardPage() {
   const [pendingDocuments, setPendingDocuments] = useState<PendingDocumentRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const { toast } = useToast();
   const today = useMemo(() => new Date(), []);
 
@@ -176,6 +180,8 @@ export default function DashboardPage() {
     })
     .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime());
 
+  const selectedDateTasks = selectedDate ? tasks.filter((task) => isSameDay(task.deadline, selectedDate)) : [];
+
   const completedThisMonth = tasks.filter((task) => {
     if (!task.completedAt) {
       return false;
@@ -226,6 +232,22 @@ export default function DashboardPage() {
       ) : (
         <div className="grid gap-4 xl:grid-cols-[1.5fr_0.9fr]">
           <div className="space-y-4">
+            {selectedDate ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">
+                    งานวันที่ {selectedDate.toLocaleDateString("th-TH", { day: "numeric", month: "long", year: "numeric" })}
+                  </p>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => setSelectedDate(null)}>
+                    ล้างตัวกรอง
+                  </Button>
+                </div>
+                <OfficeHubSummaryTable
+                  title="งานตามวันที่เลือก"
+                  tasks={selectedDateTasks.map(taskToRow)}
+                />
+              </div>
+            ) : null}
             <OfficeHubSummaryTable title="งานวันนี้" tasks={todayTasks.slice(0, 5).map(taskToRow)} />
             <OfficeHubSummaryTable title="งานค้าง" tasks={overdueTasks.slice(0, 5).map(taskToRow)} />
             <OfficeHubSummaryTable title="กำหนดส่ง 7 วัน" tasks={upcomingDeadlines.slice(0, 5).map(taskToRow)} />
@@ -234,11 +256,14 @@ export default function DashboardPage() {
 
           <div className="space-y-4">
             <OfficeHubNotifications notifications={notifications} />
-            <CalendarCard />
+            <CalendarCard tasks={tasks} selectedDate={selectedDate} onSelectDate={setSelectedDate} />
+            <TaxDeadlineDashboard tasks={tasks} today={today} />
             <OfficeHubActivityList activities={activities} />
           </div>
         </div>
       )}
+
+      {!isLoading && !error ? <OfficeHubCharts tasks={tasks} /> : null}
     </main>
   );
 }

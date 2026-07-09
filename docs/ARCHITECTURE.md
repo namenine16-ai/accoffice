@@ -13,6 +13,7 @@ AccOffice is built as a full-stack Next.js App Router application with a service
 - `services/` contains business logic for customer, workflow, and activity use cases. No Prisma access, no UI logic.
 - `repositories/` contains data access wrappers for Prisma and query filtering only — no business logic, no validation, no HTTP. A repository is only added once a Prisma model exists for it (e.g. `employee.repository.ts` exists ahead of the Employee feature/UI because the `Employee` model already exists; there are intentionally no `tax`/`document` repositories yet, since those models don't exist).
 - `lib/prisma.ts` exposes the Prisma client; `lib/api-error.ts` provides a centralized API error-response helper with structured server-side logging.
+- `components/dashboard/charts/` contains the shared chart primitives (`ChartCard`, `ChartTooltip`, `ChartLegend`, `ChartContainer`, `chartPalette`) and the four Office Hub chart components. `recharts` is the only charting library; nothing outside this folder imports from `recharts` directly — pages and `OfficeHubCharts.tsx` only ever import the named chart components.
 
 ## Data flow
 
@@ -39,3 +40,5 @@ AccOffice is built as a full-stack Next.js App Router application with a service
 - Keep feature views small and delegate form handling to reusable form components.
 - Dynamic route pages (`app/**/[id]/page.tsx`) and API routes both receive `params` as a `Promise` and must `await` it before use.
 - Pages never access Prisma directly except for the two existing server-component detail pages (`app/customers/[id]/page.tsx`, `app/workflow/[id]/page.tsx`), which read directly for simple, single-record server-rendered views; all mutating flows go through `app/api/*`.
+- `app/layout.tsx` reads the `sidebar_collapsed` cookie server-side (via `next/headers`) and passes it into `Sidebar` as `initialCollapsed`, so the collapsed/expanded state renders correctly on the first paint with no client-side flash. This makes every route dynamically rendered (no static prerendering), since the root layout now depends on per-request cookie data.
+- Cross-cutting activity logging goes through `activityService.logActivity()`, called by other services after a successful mutation (e.g. `customer.service.ts`). It never throws — a logging failure is caught and logged to the console rather than failing the primary operation.

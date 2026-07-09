@@ -1,5 +1,15 @@
 # Changelog
 
+## Epic 1.1 — Complete Office Hub Dashboard
+
+- **Responsive application shell**: `components/layout/Sidebar.tsx` now renders a collapsible desktop sidebar (icon-only/full-width toggle) and a mobile off-canvas drawer (shared `Sheet` primitive) behind a hamburger trigger, sharing one `SidebarNav` menu definition. Collapse state persists via a `sidebar_collapsed` cookie read server-side in `app/layout.tsx`, avoiding a hydration flash (at the cost of the whole app losing static prerendering, since the root layout now reads per-request cookies).
+- **Monthly charts**: added `recharts` as the single charting library. Built a shared chart-primitives set (`ChartCard`, `ChartTooltip`, `ChartLegend`, `ChartContainer`, `chartPalette`) under `components/dashboard/charts/`, plus four chart components — Tasks by Month (line), Completed vs Overdue (bar, status colors), Task Status Distribution (donut), Tax Filing Status (stacked bar) — composed in `OfficeHubCharts.tsx`. All data is derived client-side from the real `WorkflowTask[]` array already fetched from `/api/workflow`; no new API calls, no mock data. Palette validated against the dataviz skill's CVD/contrast checks for both light and dark tokens (dark tokens defined but currently unused — no theme toggle exists in the app yet).
+- **Interactive calendar**: `OfficeHubCalendar` now marks days with a task deadline, shows a dot indicator, and is clickable — selecting a date filters a new "งานตามวันที่เลือก" section on the dashboard; removed a pre-existing redundant nested `Card` wrapper in the process.
+- **Tax deadline dashboard**: new `TaxDeadlineDashboard` component breaks down tasks due within 7 days by tax type (VAT, PND1, PND3, PND53, SSO), resolving the earlier audit finding that "upcoming tax deadlines" wasn't actually tax-type-aware.
+- **Activity logging**: added `activityRepository.create()` and `activityService.logActivity()` (best-effort, swallows its own errors so a logging failure never masks a successful mutation). Wired into `customer.service.ts` for create/update/delete. Workflow-update and document-upload logging are **not** wired — there is no task-mutation endpoint yet (Epic 3 scope) and no `Document` model or upload endpoint yet (Epic 4 scope, needs a schema decision).
+- Cleaned up 3 orphaned dashboard components (`DeadlineCard`, `TaskCard`, `OfficeHubSection`) with zero importers anywhere in the codebase.
+- Verified `npm run lint`, `npm run build`, and `npx tsc --noEmit` all pass clean after each step.
+
 ## Technical Debt & Architecture Cleanup (pre-Sprint 5)
 
 - Removed the obsolete static `app/page.tsx` dashboard (hardcoded mock data); `/` now permanently redirects to the real, live `/dashboard` (Office Hub). Updated the Sidebar's Dashboard link to `/dashboard` to match.
