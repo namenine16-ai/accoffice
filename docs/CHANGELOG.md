@@ -1,5 +1,17 @@
 # Changelog
 
+## Epic 2 — Authentication
+
+- Added stateless JWT authentication (`jose`, httpOnly cookie, 7-day expiry, `sameSite=lax`, `secure` in production only). No `Session` model, no migration.
+- New: `lib/auth.ts` (sign/verify/cookie config, edge-safe), `lib/permissions.ts` (role → permission matrix, single source of truth), `types/auth.ts`, `validators/auth.ts`, `repositories/auth.repository.ts`, `services/auth.service.ts` (`login`, `logout`, `getCurrentUser`, `hasRole`), `app/api/auth/{login,logout,me}/route.ts`, `middleware.ts`, `prisma/seed.ts`.
+- Two roles seeded: `admin` (full access to every resource) and `staff` (read/write on customers, workflow, tax, documents; no delete/wildcard; no finance, reports, employees, or settings). No self-registration endpoint — the only way to create a user is `prisma/seed.ts` (idempotent, reads `AUTH_ADMIN_EMAIL`/`AUTH_ADMIN_PASSWORD`).
+- `middleware.ts` protects every route except `/login` and `/api/auth/*`; unauthenticated page requests redirect to `/login`, unauthenticated API requests get 401 JSON. Admin-only pages redirect non-admins to `/dashboard` (403 JSON for API).
+- Replaced the `/login` stub with a real form (React Hook Form + Zod, same pattern as `CustomerForm`); the app shell now hides the `Sidebar` on `/login` via an `x-pathname` header middleware injects.
+- Verified the full flow live against the dev server, not just lint/build/tsc: unauthenticated redirect/401, wrong-password rejection, successful login + cookie issuance, authenticated access to a protected page and an admin-only page, logout clearing the cookie, and the seed script's idempotent re-run.
+- Fixed a bug found during that verification: the `x-pathname` header was only injected on the final middleware return path, so `/login` (an early-return public path) never got it, and the sidebar kept rendering there.
+- Moved the Prisma seed command from the deprecated `package.json#prisma` field to `prisma.config.ts`'s `migrations.seed`, avoiding a new deprecation warning.
+- Known gap: `Sidebar.tsx` doesn't hide admin-only links from `staff` users yet — the route is blocked server-side, but the link is still visible.
+
 ## Epic 1.1 — Complete Office Hub Dashboard
 
 - **Responsive application shell**: `components/layout/Sidebar.tsx` now renders a collapsible desktop sidebar (icon-only/full-width toggle) and a mobile off-canvas drawer (shared `Sheet` primitive) behind a hamburger trigger, sharing one `SidebarNav` menu definition. Collapse state persists via a `sidebar_collapsed` cookie read server-side in `app/layout.tsx`, avoiding a hydration flash (at the cost of the whole app losing static prerendering, since the root layout now reads per-request cookies).
