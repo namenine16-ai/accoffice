@@ -74,10 +74,13 @@ Real-data KPI cards, today's/overdue tasks, missing-documents tracker, tax-deadl
 ### Epic 2 — Authentication ✅
 Stateless JWT sessions (`jose`) in an httpOnly cookie, `bcryptjs` password hashing, `middleware.ts` route protection (public/staff/admin tiers), a seed script creating the first admin user + `admin`/`staff` roles with a defined permission matrix. Permission *enforcement* inside existing APIs and hiding admin-only sidebar links from staff are explicitly deferred (see Technical Debt).
 
+### Epic 3 — Employee Management ✅
+Employee CRUD (Repository → Service → API → UI, mirrors Customer module), search/filter/status + pagination on the employee list, employee profile detail page, role assignment including first-time login creation (`EmployeeAccountPanel`), a real `CustomerTask` mutation endpoint (`PATCH /api/workflow/[id]`) wired into a new `WorkflowAssignPanel` on the workflow detail page, a per-employee workload dashboard (`EmployeeWorkloadSummary`, reuses `/api/workflow` + the existing `WorkflowSummary` chart component), attendance/leave placeholder stub cards, and activity logging across all of the above.
+
 ## Current Epic
 
-### Epic 3 — Employee Management (planned, not started)
-Employee CRUD, workflow assignment, employee dashboard/profile, search/filter/status, role assignment (including creating a login for an employee who doesn't have one), attendance/leave placeholders, activity logging. Plan presented and two scope questions answered (role assignment includes account creation; workflow-assignment mutation extends the existing workflow module). Awaiting final approval to begin coding.
+### Epic 4 — Document Management (not started)
+Real document upload/storage — requires a `Document` Prisma model and a storage-strategy decision. Will stop for approval before touching `schema.prisma`.
 
 ## Remaining Epics
 
@@ -97,7 +100,6 @@ This is the authoritative epic list — see `docs/EPIC_PROGRESS.md` for full per
 
 - Permission matrix (`lib/permissions.ts`) is defined and seeded into `Permission`/`Role` rows, but **not enforced inside existing API routes** — e.g., a `staff` user can currently call `DELETE /api/customers/[id]` even though their permission set has no `customers:delete`. Deferred by explicit decision.
 - `Sidebar.tsx` shows all 9 links to every authenticated user regardless of role. Middleware blocks the route server-side, but a `staff` user can still click an admin-only link and get bounced back.
-- No `CustomerTask` mutation endpoint exists yet (no `PATCH /api/workflow/[id]`) — planned as part of Epic 3's "Assign Workflow."
 - No `Document` model — document upload is unimplemented.
 - No `prisma/migrations` — schema changes are applied via `prisma db push`, not versioned migrations.
 - No automated test suite (`tests/` is empty, no test framework installed). CI (`.github/workflows/ci.yml`) runs lint + build only.
@@ -106,7 +108,7 @@ This is the authoritative epic list — see `docs/EPIC_PROGRESS.md` for full per
 ## Known Limitations
 
 - A role change for a logged-in user doesn't take effect until they log out/in again or their token expires (7 days) — middleware can't query the database (Edge Runtime), so it relies entirely on the JWT's embedded `roles` claim.
-- There is no self-registration endpoint by design — the only way to create the first user is `prisma/seed.ts`; further users are created by an admin (Epic 3's account-creation flow, once built).
+- There is no self-registration endpoint by design — the only way to create the first user is `prisma/seed.ts`; further users are created by an admin via the Epic 3 employee account-creation flow.
 - The whole app is dynamically rendered (no static prerendering) because `app/layout.tsx` reads a cookie on every request (`sidebar_collapsed`, and indirectly the session). This is an accepted tradeoff, not a bug.
 
 ## Authentication Architecture
@@ -143,13 +145,12 @@ Before every commit, show: files created, files modified, architecture impact, v
 
 ## Future Roadmap
 
-1. Epic 3 — Employee Management (next)
-2. Epic 4 — Document Management (schema decision required)
-3. Epic 5 — Workflow Automation
-4. Epic 6 — Finance (schema decision required)
-5. Epic 7 — Reports (may require a schema decision)
-6. Epic 8 — Notifications (schema decision required, not yet scoped in detail)
-7. Epic 9 — AI Assistant (not yet scoped in detail)
-8. Epic 10 — Production Deployment (not yet scoped in detail)
-9. Permission enforcement retrofit across existing APIs (currently deferred technical debt)
-10. Sidebar role-aware link visibility (currently deferred technical debt)
+1. Epic 4 — Document Management (next, schema decision required)
+2. Epic 5 — Workflow Automation
+3. Epic 6 — Finance (schema decision required)
+4. Epic 7 — Reports (may require a schema decision)
+5. Epic 8 — Notifications (schema decision required, not yet scoped in detail)
+6. Epic 9 — AI Assistant (not yet scoped in detail)
+7. Epic 10 — Production Deployment (not yet scoped in detail)
+8. Permission enforcement retrofit across existing APIs (currently deferred technical debt)
+9. Sidebar role-aware link visibility (currently deferred technical debt)

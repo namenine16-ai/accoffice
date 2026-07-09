@@ -12,5 +12,19 @@ export const employeeCreateSchema = z.object({
 
 export const employeeUpdateSchema = employeeCreateSchema.partial();
 
+export const employeeAccountCreateSchema = z.object({
+  email: z.string().email("รูปแบบอีเมลไม่ถูกต้อง"),
+  password: z.string().min(8, "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร"),
+  role: z.enum(["admin", "staff"]),
+});
+
+export const employeeAccountUpdateSchema = z.object({
+  role: z.enum(["admin", "staff"]).optional(),
+  isActive: z.boolean().optional(),
+  password: z.string().min(8, "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร").optional(),
+});
+
 export type EmployeeCreateInput = z.infer<typeof employeeCreateSchema>;
 export type EmployeeUpdateInput = z.infer<typeof employeeUpdateSchema>;
+export type EmployeeAccountCreateInput = z.infer<typeof employeeAccountCreateSchema>;
+export type EmployeeAccountUpdateInput = z.infer<typeof employeeAccountUpdateSchema>;

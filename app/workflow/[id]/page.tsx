@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
+import { workflowService } from "@/services/workflow.service";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { WorkflowAssignPanel } from "@/components/workflow/WorkflowAssignPanel";
 
 interface WorkflowTaskDetailPageProps {
   params: Promise<{
@@ -48,13 +49,10 @@ function getStatusVariant(status: string) {
 export default async function WorkflowTaskDetailPage({ params }: WorkflowTaskDetailPageProps) {
   const { id } = await params;
 
-  const task = await prisma.customerTask.findUnique({
-    where: { id: Number(id) },
-    include: {
-      customer: true,
-      employee: true,
-    },
-  });
+  const [task, assignableEmployees] = await Promise.all([
+    workflowService.getTaskById(Number(id)),
+    workflowService.getAssignableEmployees(),
+  ]);
 
   if (!task) {
     return (
@@ -132,15 +130,13 @@ export default async function WorkflowTaskDetailPage({ params }: WorkflowTaskDet
           <CardHeader>
             <CardTitle>ผู้รับผิดชอบ</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
-            {task.employee ? (
-              <>
-                <p className="font-medium">{task.employee.firstName} {task.employee.lastName}</p>
-                <p>{task.employee.position ?? "ตำแหน่งไม่ระบุ"}</p>
-              </>
-            ) : (
-              <p>ยังไม่ได้มอบหมายพนักงาน</p>
-            )}
+          <CardContent>
+            <WorkflowAssignPanel
+              taskId={task.id}
+              currentEmployeeId={task.assignedEmployeeId}
+              currentStatus={task.status}
+              employees={assignableEmployees}
+            />
           </CardContent>
         </Card>
       </div>

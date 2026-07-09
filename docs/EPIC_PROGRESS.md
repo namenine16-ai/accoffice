@@ -6,7 +6,7 @@
 |---|---|---|---|
 | 1 | Dashboard | ✅ Completed | lint/tsc/build pass |
 | 2 | Authentication | ✅ Completed | lint/tsc/build pass + live functional test |
-| 3 | Employee Management | 🟡 Planned, not started | — |
+| 3 | Employee Management | ✅ Completed | lint/tsc/build pass + live functional test |
 | 4 | Document Management | ⬜ Not started | — |
 | 5 | Workflow Automation | ⬜ Not started | — |
 | 6 | Finance | ⬜ Not started | — |
@@ -71,19 +71,25 @@
 
 ## Epic 3 — Employee Management
 
-**Status:** Not Started (plan approved in principle, implementation not yet begun)
+**Status:** Completed
 
-**Objectives:**
-- Employee CRUD (mirrors the Customer module's Repository → Service → API → UI pattern)
-- Assign Workflow — extends the *existing* workflow module (`workflow.repository.ts` / `workflow.service.ts`) with a real `CustomerTask` mutation endpoint, since none exists today
-- Employee Dashboard (workload/task-count summary, reusing existing `/api/workflow` data)
-- Employee Profile (detail page, mirrors the Customer detail page)
-- Search / Filter / Status on the employee list
-- Role assignment — including creating a login (`User` account) for an employee who doesn't have one yet, then assigning `admin`/`staff`
-- Attendance placeholder / Leave placeholder — UI stubs only, no schema, no real data
-- Activity logging wired into employee CRUD and the new account-creation flow
+**Summary:** Employee CRUD mirroring the Customer module's Repository → Service → API → UI pattern, a real `CustomerTask` assignment/status-mutation endpoint extending the existing workflow module, a per-employee workload dashboard reusing `/api/workflow`, and account/role management including first-time login creation.
 
-**No database changes required** for this epic — `Employee`, `CustomerTask.assignedEmployeeId`, `User`, and `Role` all already exist.
+**Completed features:**
+- [x] Employee CRUD — `repositories/employee.repository.ts`, `services/employee.service.ts`, `app/api/employees/*`, `app/employees/*` pages
+- [x] Employee Profile (detail page at `/employees/[id]`, mirrors the Customer detail page)
+- [x] Search / Filter (department) / Status filter + pagination on the employee list (`EmployeeTable`)
+- [x] Role assignment — including creating a login (`User` account) for an employee who doesn't have one yet (`EmployeeAccountPanel`, `POST/PATCH /api/employees/[id]/account`), then assigning `admin`/`staff`, toggling active state, and resetting passwords
+- [x] Assign Workflow — `PATCH /api/workflow/[id]` (new), `workflowRepository.updateTask`, `workflowService.updateTask`; UI wired into `/workflow/[id]` via `WorkflowAssignPanel` (assign/reassign employee, change status)
+- [x] Employee Dashboard — `EmployeeWorkloadSummary` on the employee detail page, fetches `/api/workflow?employeeId=` and renders task counts via the existing `WorkflowSummary` component
+- [x] Attendance placeholder / Leave placeholder — static UI stub cards on the employee detail page, no schema, no real data
+- [x] Activity logging wired into employee CRUD, account creation/role change/activation/password reset, and the new workflow assignment/status-change mutations
+
+**No database changes were required** for this epic — `Employee`, `CustomerTask.assignedEmployeeId`, `User`, and `Role` all already existed.
+
+**Verification status:** `npm run lint`, `npx tsc --noEmit`, `npm run build` all pass. Additionally verified live against the running dev server using real records created/removed through the actual APIs (no mock data): employee creation, workflow-task assignment (`PATCH /api/workflow/[id]`), employee-scoped workload summary (`GET /api/workflow?employeeId=`), and activity-log entries for `workflow.task_assigned` / `workflow.task_status_changed`.
+
+**Known limitation carried over:** `app/workflow/[id]/page.tsx` was refactored during this epic to go through `workflowService` instead of importing Prisma directly, fixing a pre-existing architecture-rule violation; the rest of `app/workflow/page.tsx`'s list view was already service-backed.
 
 ---
 

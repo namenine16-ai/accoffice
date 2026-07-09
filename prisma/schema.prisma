@@ -8,41 +8,131 @@ datasource db {
 }
 
 model Customer {
-  id                 Int       @id @default(autoincrement())
+  id                Int       @id @default(autoincrement())
+  code              String    @unique
+  companyName       String
+  taxId             String    @unique
+  businessType      String?
+  companyRegisterNo String?
+  vatRegistered     Boolean   @default(false)
+  vatNumber         String?
+  address           String?
+  province          String?
+  postcode          String?
+  contactName       String?
+  phone             String?
+  email             String?
+  lineId            String?
+  accountant        String?
+  serviceType       String?
+  accountingPeriod  String?
+  serviceFee        Float     @default(0)
+  startDate         DateTime?
+  status            String    @default("ใช้งาน")
+  note              String?
+  googleDriveFolder String?
 
-  code               String    @unique
-  companyName        String
-  taxId              String    @unique
+  tasks CustomerTask[]
 
-  businessType       String?
-  companyRegisterNo  String?
-  vatRegistered      Boolean   @default(false)
-  vatNumber          String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 
-  address            String?
-  province           String?
-  postcode           String?
+model CustomerTask {
+  id                 Int  @id @default(autoincrement())
+  customerId         Int
+  assignedEmployeeId Int?
 
-  contactName        String?
-  phone              String?
-  email              String?
-  lineId             String?
+  month Int
+  year  Int
 
-  accountant         String?
+  status      String    @default("pending")
+  progress    Int       @default(0)
+  deadline    DateTime?
+  completedAt DateTime?
+  priority    String    @default("normal")
+  remarks     String?
 
-  serviceType        String?
-  accountingPeriod   String?
+  receiveDoc Boolean @default(false)
+  vat        Boolean @default(false)
+  pnd1       Boolean @default(false)
+  pnd3       Boolean @default(false)
+  pnd53      Boolean @default(false)
+  sso        Boolean @default(false)
+  closing    Boolean @default(false)
 
-  serviceFee         Float?    @default(0)
+  note String?
 
-  startDate          DateTime?
+  customer Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  employee Employee? @relation(fields: [assignedEmployeeId], references: [id], onDelete: SetNull)
 
-  status             String    @default("ใช้งาน")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 
-  note               String?
+model User {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  password     String
+  name         String?
+  isActive     Boolean       @default(true)
+  employee     Employee?     @relation("UserEmployee")
+  roles        Role[]
+  activityLogs ActivityLog[]
+  deletedAt    DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
 
-  googleDriveFolder  String?
+model Role {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
+  description String?
+  users       User[]
+  permissions Permission[]
+  deletedAt   DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
 
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+model Permission {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  roles       Role[]
+  deletedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Employee {
+  id            Int            @id @default(autoincrement())
+  user          User?          @relation("UserEmployee", fields: [userId], references: [id], onDelete: SetNull)
+  userId        Int?           @unique
+  firstName     String
+  lastName      String
+  email         String         @unique
+  phone         String?
+  position      String?
+  department    String?
+  status        String         @default("active")
+  deletedAt     DateTime?
+  activityLogs  ActivityLog[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  customerTasks CustomerTask[]
+}
+
+model ActivityLog {
+  id         Int       @id @default(autoincrement())
+  user       User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     Int?
+  action     String
+  details    String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  employee   Employee? @relation(fields: [employeeId], references: [id])
+  employeeId Int?
 }

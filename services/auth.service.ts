@@ -50,4 +50,37 @@ export const authService = {
   hasRole(session: SessionPayload | null, role: RoleName) {
     return hasRole(session, role);
   },
+
+  async createAccount({
+    email,
+    password,
+    roleName,
+  }: {
+    email: string;
+    password: string;
+    roleName: RoleName;
+  }) {
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    return authRepository.create({
+      email,
+      password: passwordHash,
+      roles: { connect: [{ name: roleName }] },
+    });
+  },
+
+  assignRole(userId: number, roleName: RoleName) {
+    return authRepository.update(userId, {
+      roles: { set: [{ name: roleName }] },
+    });
+  },
+
+  setAccountActive(userId: number, isActive: boolean) {
+    return authRepository.update(userId, { isActive });
+  },
+
+  async resetPassword(userId: number, newPassword: string) {
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    return authRepository.update(userId, { password: passwordHash });
+  },
 };

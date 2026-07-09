@@ -1,8 +1,7 @@
-export default function TaxPage() {
+export default function DocumentsPage() {
   return (
     <main className="p-6">
-      <h1 className="text-2xl font-bold">📂 เอกสาร</h1>
-      <p>หน้านี้กำลังพัฒนา</p>
+      <h1>📁 เอกสาร</h1>
     </main>
   );
 }

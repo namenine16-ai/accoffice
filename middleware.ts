@@ -13,7 +13,15 @@ function isPublicPath(pathname: string): boolean {
 }
 
 function isAdminOnlyPath(pathname: string): boolean {
-  return ADMIN_ONLY_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+  return ADMIN_ONLY_PATHS.some((path) => {
+    const apiPath = `/api${path}`;
+    return (
+      pathname === path ||
+      pathname.startsWith(`${path}/`) ||
+      pathname === apiPath ||
+      pathname.startsWith(`${apiPath}/`)
+    );
+  });
 }
 
 function nextWithPathname(request: NextRequest, pathname: string) {
