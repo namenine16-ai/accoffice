@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { CustomerRecentDocuments } from "@/components/document/CustomerRecentDocuments";
 import type { CustomerDetail } from "@/types/customer";
 
 interface CustomerDetailProps {
@@ -75,6 +76,15 @@ export default async function CustomerDetailPage({ params }: CustomerDetailProps
             </p>
             <p><span className="font-medium">ประเภทบริการ:</span> {customer.serviceType ?? "-"}</p>
             <p><span className="font-medium">หมายเหตุ:</span> {customer.note ?? "-"}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>เอกสารล่าสุด</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CustomerRecentDocuments customerId={customer.id} customerName={customer.companyName} />
           </CardContent>
         </Card>
       </div>
