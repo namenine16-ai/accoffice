@@ -32,7 +32,8 @@ model Customer {
   note              String?
   googleDriveFolder String?
 
-  tasks CustomerTask[]
+  tasks     CustomerTask[]
+  documents Document[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -66,22 +67,25 @@ model CustomerTask {
   customer Customer  @relation(fields: [customerId], references: [id], onDelete: Cascade)
   employee Employee? @relation(fields: [assignedEmployeeId], references: [id], onDelete: SetNull)
 
+  documents Document[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model User {
-  id           Int           @id @default(autoincrement())
-  email        String        @unique
-  password     String
-  name         String?
-  isActive     Boolean       @default(true)
-  employee     Employee?     @relation("UserEmployee")
-  roles        Role[]
-  activityLogs ActivityLog[]
-  deletedAt    DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id                Int           @id @default(autoincrement())
+  email             String        @unique
+  password          String
+  name              String?
+  isActive          Boolean       @default(true)
+  employee          Employee?     @relation("UserEmployee")
+  roles             Role[]
+  activityLogs      ActivityLog[]
+  uploadedDocuments Document[]
+  deletedAt         DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 }
 
 model Role {
@@ -135,4 +139,49 @@ model ActivityLog {
   updatedAt  DateTime  @updatedAt
   employee   Employee? @relation(fields: [employeeId], references: [id])
   employeeId Int?
+}
+
+enum DocumentCategory {
+  ACCOUNTING
+  TAX
+  VAT
+  PAYROLL
+  SOCIAL_SECURITY
+  FINANCIAL
+  CONTRACT
+  LICENSE
+  RECEIPT
+  INVOICE
+  BANK
+  ASSET
+  LEGAL
+  HR
+  OTHER
+  ARCHIVE
+}
+
+model Document {
+  id           Int           @id @default(autoincrement())
+  customerId   Int
+  customer     Customer      @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  taskId       Int?
+  task         CustomerTask? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  uploadedById Int?
+  uploadedBy   User?         @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  fileName    String
+  storedName  String
+  filePath    String
+  extension   String
+  mimeType    String
+  fileSize    Int
+  checksum    String
+  version     Int              @default(1)
+  category    DocumentCategory
+  subCategory String?
+  note        String?
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 }

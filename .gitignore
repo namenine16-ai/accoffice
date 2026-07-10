@@ -45,3 +45,6 @@ next-env.d.ts
 # local sqlite database
 /prisma/dev.db
 /prisma/dev.db-journal
+
+# locally stored uploaded documents
+/storage/documents
