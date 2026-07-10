@@ -11,3 +11,11 @@ export const ALLOWED_MIME_TYPES: Record<string, string> = {
 };
 
 export const TAX_SUBCATEGORY_SUGGESTIONS = ["ภพ30", "ภงด1", "ภงด3", "ภงด53", "ภงด1ก", "ภงด90/91"];
+
+export const PREVIEWABLE_MIME_TYPES = new Set(["application/pdf", "image/jpeg", "image/png"]);
+
+export function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}

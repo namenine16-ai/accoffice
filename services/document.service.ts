@@ -111,4 +111,21 @@ export const documentService = {
 
     return deleted;
   },
+
+  async renameDocument(id: number, fileName: string) {
+    const document = await documentRepository.findById(id);
+    if (!document) {
+      throw new DocumentUploadError("ไม่พบเอกสาร");
+    }
+
+    const previousFileName = document.fileName;
+    const renamed = await documentRepository.update(id, { fileName });
+
+    await activityService.logActivity({
+      action: "document.renamed",
+      details: `เปลี่ยนชื่อเอกสาร: ${previousFileName} → ${fileName}`,
+    });
+
+    return renamed;
+  },
 };

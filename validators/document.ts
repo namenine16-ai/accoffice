@@ -10,3 +10,9 @@ export const documentUploadMetadataSchema = z.object({
 });
 
 export type DocumentUploadMetadata = z.infer<typeof documentUploadMetadataSchema>;
+
+export const documentRenameSchema = z.object({
+  fileName: z.string().trim().min(1, "กรุณาระบุชื่อไฟล์").max(255, "ชื่อไฟล์ยาวเกินไป"),
+});
+
+export type DocumentRenameInput = z.infer<typeof documentRenameSchema>;

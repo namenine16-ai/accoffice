@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { documentService, DocumentUploadError } from "@/services/document.service";
 import { apiErrorResponse } from "@/lib/api-error";
+import { documentRenameSchema } from "@/validators/document";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -18,6 +19,28 @@ export async function GET(_request: Request, { params }: RouteParams) {
     return NextResponse.json(document);
   } catch (error) {
     return apiErrorResponse("documents.getById", "โหลดข้อมูลเอกสารไม่สำเร็จ", 500, error);
+  }
+}
+
+export async function PATCH(request: Request, { params }: RouteParams) {
+  try {
+    const { id } = await params;
+    const body = await request.json();
+    const parsed = documentRenameSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return apiErrorResponse("documents.rename", "ข้อมูลไม่ถูกต้อง", 400);
+    }
+
+    const document = await documentService.renameDocument(Number(id), parsed.data.fileName);
+
+    return NextResponse.json(document);
+  } catch (error) {
+    if (error instanceof DocumentUploadError) {
+      return apiErrorResponse("documents.rename", error.message, 404);
+    }
+
+    return apiErrorResponse("documents.rename", "เปลี่ยนชื่อเอกสารไม่สำเร็จ", 500, error);
   }
 }
 

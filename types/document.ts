@@ -4,7 +4,11 @@ import type { DocumentUploadMetadata } from "@/validators/document";
 export type DocumentRecord = Document;
 
 export type DocumentWithRelations = Prisma.DocumentGetPayload<{
-  include: { customer: true; task: true; uploadedBy: true };
+  include: {
+    customer: true;
+    task: true;
+    uploadedBy: { select: { id: true; name: true; email: true } };
+  };
 }>;
 
 export type { DocumentUploadMetadata };

@@ -7,6 +7,14 @@ export interface DocumentFilters {
   category?: DocumentCategory;
 }
 
+const withRelations = {
+  customer: true,
+  uploadedBy: {
+    select: { id: true, name: true, email: true },
+  },
+  task: true,
+} satisfies Prisma.DocumentInclude;
+
 export const documentRepository = {
   findAll(filters: DocumentFilters = {}) {
     return prisma.document.findMany({
@@ -16,6 +24,7 @@ export const documentRepository = {
         taskId: filters.taskId,
         category: filters.category,
       },
+      include: withRelations,
       orderBy: { id: "desc" },
     });
   },
@@ -23,11 +32,19 @@ export const documentRepository = {
   findById(id: number) {
     return prisma.document.findFirst({
       where: { id, deletedAt: null },
+      include: withRelations,
     });
   },
 
   create(data: Prisma.DocumentCreateInput) {
     return prisma.document.create({
+      data,
+    });
+  },
+
+  update(id: number, data: Prisma.DocumentUpdateInput) {
+    return prisma.document.update({
+      where: { id },
       data,
     });
   },
