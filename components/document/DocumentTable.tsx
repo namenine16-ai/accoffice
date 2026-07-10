@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { DotsThreeOutlineVertical, DownloadSimple } from "@phosphor-icons/react";
+import { DotsThreeOutlineVertical, DownloadSimple, Eye, PencilSimple } from "@phosphor-icons/react";
 import {
   Table,
   TableBody,
@@ -32,25 +32,25 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { DOCUMENT_CATEGORY_LABELS } from "@/components/document/DocumentFilters";
-import type { DocumentRecord } from "@/types/document";
+import { DocumentTypeIcon } from "@/components/document/DocumentTypeIcon";
+import { DocumentPreviewDialog } from "@/components/document/DocumentPreviewDialog";
+import { DocumentRenameDialog } from "@/components/document/DocumentRenameDialog";
+import { formatFileSize } from "@/lib/document-config";
+import type { DocumentWithRelations } from "@/types/document";
 
 interface DocumentTableProps {
-  documents: DocumentRecord[];
-  customerNames: Record<number, string>;
+  documents: DocumentWithRelations[];
   onDeleteDocument: (id: number) => Promise<void>;
+  onDocumentChanged: () => void;
 }
 
 const PAGE_SIZE = 10;
 
-function formatFileSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-export default function DocumentTable({ documents, customerNames, onDeleteDocument }: DocumentTableProps) {
+export default function DocumentTable({ documents, onDeleteDocument, onDocumentChanged }: DocumentTableProps) {
   const [page, setPage] = useState(1);
-  const [deletingDocument, setDeletingDocument] = useState<DocumentRecord | null>(null);
+  const [deletingDocument, setDeletingDocument] = useState<DocumentWithRelations | null>(null);
+  const [previewingDocument, setPreviewingDocument] = useState<DocumentWithRelations | null>(null);
+  const [renamingDocument, setRenamingDocument] = useState<DocumentWithRelations | null>(null);
 
   const totalPages = Math.max(1, Math.ceil(documents.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -72,6 +72,7 @@ export default function DocumentTable({ documents, customerNames, onDeleteDocume
               <TableHead className="p-3">ลูกค้า</TableHead>
               <TableHead className="p-3">หมวดหมู่</TableHead>
               <TableHead className="p-3">ขนาดไฟล์</TableHead>
+              <TableHead className="p-3">อัปโหลดโดย</TableHead>
               <TableHead className="p-3">วันที่อัปโหลด</TableHead>
               <TableHead className="p-3">การจัดการ</TableHead>
             </TableRow>
@@ -80,12 +81,21 @@ export default function DocumentTable({ documents, customerNames, onDeleteDocume
             {visibleDocuments.map((document) => (
               <TableRow key={document.id}>
                 <TableCell className="p-3">
-                  <div className="font-medium">{document.fileName}</div>
-                  {document.note ? (
-                    <div className="text-xs text-muted-foreground">{document.note}</div>
-                  ) : null}
+                  <button
+                    type="button"
+                    className="flex items-start gap-2 text-left hover:underline"
+                    onClick={() => setPreviewingDocument(document)}
+                  >
+                    <DocumentTypeIcon extension={document.extension} className="mt-0.5 shrink-0 text-muted-foreground" />
+                    <span>
+                      <span className="block font-medium">{document.fileName}</span>
+                      {document.note ? (
+                        <span className="block text-xs text-muted-foreground">{document.note}</span>
+                      ) : null}
+                    </span>
+                  </button>
                 </TableCell>
-                <TableCell className="p-3">{customerNames[document.customerId] ?? "-"}</TableCell>
+                <TableCell className="p-3">{document.customer.companyName}</TableCell>
                 <TableCell className="p-3">
                   <Badge variant="outline">{DOCUMENT_CATEGORY_LABELS[document.category]}</Badge>
                   {document.subCategory ? (
@@ -93,6 +103,9 @@ export default function DocumentTable({ documents, customerNames, onDeleteDocume
                   ) : null}
                 </TableCell>
                 <TableCell className="p-3">{formatFileSize(document.fileSize)}</TableCell>
+                <TableCell className="p-3">
+                  {document.uploadedBy?.name ?? document.uploadedBy?.email ?? "-"}
+                </TableCell>
                 <TableCell className="p-3">
                   {new Date(document.createdAt).toLocaleDateString("th-TH")}
                 </TableCell>
@@ -104,6 +117,12 @@ export default function DocumentTable({ documents, customerNames, onDeleteDocume
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => setPreviewingDocument(document)}>
+                        <Eye /> ดูตัวอย่าง
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setRenamingDocument(document)}>
+                        <PencilSimple /> เปลี่ยนชื่อ
+                      </DropdownMenuItem>
                       <DropdownMenuItem>
                         <a
                           href={`/api/documents/${document.id}/download`}
@@ -171,6 +190,16 @@ export default function DocumentTable({ documents, customerNames, onDeleteDocume
           </div>
         </div>
       </CardContent>
+
+      <DocumentPreviewDialog
+        document={previewingDocument}
+        onOpenChange={(isOpen) => !isOpen && setPreviewingDocument(null)}
+      />
+      <DocumentRenameDialog
+        document={renamingDocument}
+        onOpenChange={(isOpen) => !isOpen && setRenamingDocument(null)}
+        onRenamed={onDocumentChanged}
+      />
     </Card>
   );
 }

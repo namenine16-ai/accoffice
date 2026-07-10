@@ -21,7 +21,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { DocumentUploadDialog } from "@/components/document/DocumentUploadDialog";
 import { DOCUMENT_CATEGORY_LABELS } from "@/components/document/DocumentFilters";
-import type { DocumentRecord } from "@/types/document";
+import { DocumentTypeIcon } from "@/components/document/DocumentTypeIcon";
+import { DocumentPreviewDialog } from "@/components/document/DocumentPreviewDialog";
+import type { DocumentWithRelations } from "@/types/document";
 
 interface CustomerRecentDocumentsProps {
   customerId: number;
@@ -31,10 +33,11 @@ interface CustomerRecentDocumentsProps {
 const RECENT_LIMIT = 5;
 
 export function CustomerRecentDocuments({ customerId, customerName }: CustomerRecentDocumentsProps) {
-  const [documents, setDocuments] = useState<DocumentRecord[]>([]);
+  const [documents, setDocuments] = useState<DocumentWithRelations[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [deletingDocument, setDeletingDocument] = useState<DocumentRecord | null>(null);
+  const [deletingDocument, setDeletingDocument] = useState<DocumentWithRelations | null>(null);
+  const [previewingDocument, setPreviewingDocument] = useState<DocumentWithRelations | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -121,15 +124,22 @@ export function CustomerRecentDocuments({ customerId, customerName }: CustomerRe
         <ul className="divide-y divide-border">
           {recentDocuments.map((document) => (
             <li key={document.id} className="flex items-center justify-between gap-3 py-3">
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{document.fileName}</p>
-                <div className="mt-1 flex items-center gap-2">
-                  <Badge variant="outline">{DOCUMENT_CATEGORY_LABELS[document.category]}</Badge>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(document.createdAt).toLocaleDateString("th-TH")}
+              <button
+                type="button"
+                className="flex min-w-0 items-start gap-2 text-left hover:underline"
+                onClick={() => setPreviewingDocument(document)}
+              >
+                <DocumentTypeIcon extension={document.extension} className="mt-0.5 shrink-0 text-muted-foreground" />
+                <span className="min-w-0">
+                  <span className="block truncate text-sm font-medium">{document.fileName}</span>
+                  <span className="mt-1 flex items-center gap-2">
+                    <Badge variant="outline">{DOCUMENT_CATEGORY_LABELS[document.category]}</Badge>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(document.createdAt).toLocaleDateString("th-TH")}
+                    </span>
                   </span>
-                </div>
-              </div>
+                </span>
+              </button>
               <div className="flex shrink-0 items-center gap-1">
                 <a href={`/api/documents/${document.id}/download`}>
                   <Button variant="outline" size="icon-sm" aria-label="ดาวน์โหลด">
@@ -168,6 +178,11 @@ export function CustomerRecentDocuments({ customerId, customerName }: CustomerRe
           ))}
         </ul>
       )}
+
+      <DocumentPreviewDialog
+        document={previewingDocument}
+        onOpenChange={(isOpen) => !isOpen && setPreviewingDocument(null)}
+      />
     </div>
   );
 }

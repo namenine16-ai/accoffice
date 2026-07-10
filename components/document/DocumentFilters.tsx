@@ -67,7 +67,7 @@ export function DocumentFilters({ filters, customers, onFiltersChange, onReset }
           <div className="space-y-2">
             <label className="text-sm font-medium">ค้นหา</label>
             <Input
-              placeholder="ค้นหาชื่อไฟล์, หมายเหตุ"
+              placeholder="ค้นหาชื่อไฟล์, ลูกค้า, ผู้อัปโหลด, หมายเหตุ"
               value={filters.query}
               onChange={(event) => onFiltersChange({ ...filters, query: event.target.value })}
             />

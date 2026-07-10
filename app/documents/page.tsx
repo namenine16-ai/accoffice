@@ -13,11 +13,11 @@ import {
   type DocumentFiltersState,
 } from "@/components/document/DocumentFilters";
 import { DocumentUploadDialog } from "@/components/document/DocumentUploadDialog";
-import type { DocumentRecord } from "@/types/document";
+import type { DocumentWithRelations } from "@/types/document";
 import type { CustomerRow } from "@/types/customer";
 
 export default function DocumentsPage() {
-  const [documents, setDocuments] = useState<DocumentRecord[]>([]);
+  const [documents, setDocuments] = useState<DocumentWithRelations[]>([]);
   const [customers, setCustomers] = useState<CustomerRow[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,11 +62,6 @@ export default function DocumentsPage() {
     }
   }
 
-  const customerNames = useMemo(
-    () => Object.fromEntries(customers.map((customer) => [customer.id, customer.companyName])),
-    [customers]
-  );
-
   const filteredDocuments = useMemo(() => {
     const query = filters.query.trim().toLowerCase();
 
@@ -74,7 +69,14 @@ export default function DocumentsPage() {
       if (filters.category !== "all" && document.category !== filters.category) return false;
       if (filters.customerId !== "all" && String(document.customerId) !== filters.customerId) return false;
       if (query) {
-        const haystack = [document.fileName, document.note ?? "", document.subCategory ?? ""]
+        const haystack = [
+          document.fileName,
+          document.note ?? "",
+          document.subCategory ?? "",
+          document.customer.companyName,
+          document.uploadedBy?.name ?? "",
+          document.uploadedBy?.email ?? "",
+        ]
           .join(" ")
           .toLowerCase();
         if (!haystack.includes(query)) return false;
@@ -138,8 +140,8 @@ export default function DocumentsPage() {
           ) : (
             <DocumentTable
               documents={filteredDocuments}
-              customerNames={customerNames}
               onDeleteDocument={handleDelete}
+              onDocumentChanged={refreshDocuments}
             />
           )}
         </div>
