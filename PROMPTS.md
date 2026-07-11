@@ -1,102 +1,133 @@
-# Development Prompt Library
+# FAST MODE v2 — AccOffice
 
-Reusable prompts for driving AI-assisted development on AccOffice. Each one assumes the assistant has read `CLAUDE.md`, `docs/PROJECT_CHECKPOINT.md`, `docs/DEVELOPMENT_RULES.md`, and `docs/GIT_WORKFLOW.md` first — none of these prompts repeat rules that are already written down there.
+You are working on the AccOffice project.
 
-## FAST MODE — autonomous epic/milestone execution
+Before making any changes:
 
-Use for a full inspect-through-commit pass with minimal check-ins.
+1. Read:
+- CLAUDE.md
+- PROMPTS.md
+- docs/PROJECT_CHECKPOINT.md
+- docs/EPIC_PROGRESS.md
+- docs/ARCHITECTURE.md
+- docs/DEVELOPMENT_RULES.md
+- docs/GIT_WORKFLOW.md
 
-```
-FAST MODE
+2. Inspect the repository first.
+Do not assume the current state.
 
-Inspect → Plan → Implement → Verify → Fix → Continue
+3. Respect the architecture:
 
-Do not stop for approval except:
-- Prisma schema change
-- Migration
-- New dependency
-- Security decision
-- Architecture decision
-- Business rule ambiguity
+Repository
+→ Service
+→ API
+→ UI
 
-Always:
-- Reuse existing architecture
-- Repository → Service → API → UI
-- Reuse components
-- No duplicate logic
-- No mock data
-- Run:
-  npm run lint
-  npx tsc --noEmit
-  npm run build
+Never bypass the service layer.
 
-Before every commit:
-- git status
-- Scope audit
-- Stage only milestone files
-- Show staged files
-- Commit
-- Report SHA
+--------------------------------------------------
 
-Never stage unrelated files.
-```
+Development Rules
 
-## Start the next epic
+Work only within the approved Epic/Milestone.
 
-```
-Read docs/PROJECT_CHECKPOINT.md's "Current Epic" section and
-docs/EPIC_PROGRESS.md's entry for that epic. Before writing any code,
-inspect git status and the working tree for anything already staged
-or partially implemented toward this epic — do not assume a clean
-slate. Then implement the remaining objectives following FAST MODE.
-```
+Do not expand scope.
 
-## Resume / continue in-progress work
+If additional work is discovered,
+stop and report it first.
 
-Use when the working tree has uncommitted or staged changes and it's unclear what's finished.
+--------------------------------------------------
 
-```
-Run git status --short and compare it against docs/EPIC_PROGRESS.md's
-current epic objectives. Identify what's already implemented, what's
-partially done, and what's missing. Report the gap before writing any
-code, then close it following FAST MODE.
-```
+Database Rules
 
-## Verification only — no new work
+Never modify:
 
-```
-Do not change any product code. Run:
-  npm run lint
-  npx tsc --noEmit
-  npm run build
-If anything fails, stop and report the root cause without fixing it
-unless explicitly told to. For any feature with real runtime
-behavior touched since the last verified commit, also do a live
-functional check against the dev server using real records created
-and removed through the actual APIs — no mock data, no fixtures left
-behind.
-```
+- prisma/schema.prisma
+- prisma db push
+- prisma generate
 
-## Schema-change epic (stop-for-approval flow)
+without explicit approval.
 
-Use for epics documented as requiring a schema decision (Document Management, Finance, Reports, Notifications).
+--------------------------------------------------
 
-```
-This epic needs a Prisma schema decision before implementation.
-Do not touch schema.prisma yet. First present: the proposed model(s)
-and fields, how they relate to existing models, the migration
-approach (see docs/DATABASE.md), and any storage/strategy tradeoff
-specific to this epic. Wait for approval, then implement following
-FAST MODE.
-```
+Git Rules
 
-## Commit-only — scope audit and commit already-completed work
+Never:
 
-```
-Do not write new code. Run git status --short and read every changed
-file's diff. Group changes into coherent units of work per
-docs/GIT_WORKFLOW.md. For each unit: stage only the files that belong
-to it, show the staged file list and diffstat, write a commit message
-in the project's format, commit, and report the SHA. Flag (but do not
-stage) any file that doesn't clearly belong to a unit of work.
-```
+- git commit
+- git push
+- git tag
+- git reset
+- git rebase
+
+without approval.
+
+Always perform a Scope Audit before every commit.
+
+--------------------------------------------------
+
+Verification
+
+Every milestone must pass:
+
+npm run lint
+
+npx tsc --noEmit
+
+npm run build
+
+Perform functional verification using the running dev server.
+
+--------------------------------------------------
+
+Commit Rules
+
+Separate commits by responsibility.
+
+Backend
+
+UI
+
+Docs
+
+must never be mixed.
+
+--------------------------------------------------
+
+Before every commit report:
+
+1. Files created
+
+2. Files modified
+
+3. Verification results
+
+4. Scope Audit
+
+5. Commit message
+
+Wait for approval.
+
+--------------------------------------------------
+
+Stop immediately if:
+
+- Schema change required
+- Unexpected files appear
+- Existing architecture would be broken
+- Repository pattern would be bypassed
+- Security concern discovered
+
+--------------------------------------------------
+
+Goal
+
+Produce production-quality code.
+
+Keep commits small.
+
+Keep architecture clean.
+
+Do not push.
+
+Wait for approval whenever required.
