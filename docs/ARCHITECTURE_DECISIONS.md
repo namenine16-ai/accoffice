@@ -201,3 +201,116 @@ This log records **why** each significant architectural decision was made — no
 **Trade-offs:** Expands the auth surface (more code capable of minting real logins) in exchange for a workable onboarding path that stays strictly admin-gated rather than public.
 
 **Future implications:** Any further user-management feature (password resets, account disable/enable) should route through this same admin-gated surface, not a new one. Permission enforcement (ADR-008) becomes more urgent once more than one non-admin account exists in practice.
+
+---
+
+## ADR-011 — Next.js App Router as the application framework
+
+**Status:** Accepted
+**Date:** 2026-07-05
+
+**Context:** The project needed a full-stack React framework with file-based routing, server-side rendering, and co-located API routes, decided at project inception.
+
+**Decision:** Next.js 16, App Router (not Pages Router).
+
+**Alternatives Considered:**
+- *Pages Router.* Older Next.js model, less native support for Server Components and the nested-layout patterns this app relies on (e.g. the persistent Sidebar shell).
+- *A standalone SPA (Vite/CRA) plus a separate Node API server.* More moving parts to deploy and coordinate, no built-in file-based routing for either pages or API endpoints.
+
+**Consequences:** Server Components by default; `app/api/*` route handlers live alongside `app/**/page.tsx` in one project; every dynamic route receives `params` as a `Promise` (Next.js 16 convention).
+
+**Trade-offs:** Framework-opinionated conventions and a steeper App Router learning curve, in exchange for less boilerplate and a single deployable unit.
+
+---
+
+## ADR-012 — Prisma as the ORM
+
+**Status:** Accepted
+**Date:** 2026-07-06
+
+**Context:** Needed type-safe database access with schema tooling that works with SQLite for local development and is swappable to a production database provider later.
+
+**Decision:** Prisma ORM, with `repositories/` as the only layer permitted to import the generated client (ADR-006).
+
+**Alternatives Considered:**
+- *Raw SQL or a query builder (Knex/Kysely).* Full control, but no generated compile-time types matching the schema — a category of bug Prisma's generated client eliminates.
+- *TypeORM.* Heavier, decorator-based API with a less consistent developer experience for this project's needs.
+
+**Consequences:** `prisma/schema.prisma` is the single source of truth for every model; `npx prisma generate` regenerates the typed client after any schema change.
+
+**Trade-offs:** A code-generation step added to the dev loop, in exchange for end-to-end type safety from schema to query result.
+
+---
+
+## ADR-013 — SQLite for local development
+
+**Status:** Accepted
+**Date:** 2026-07-06
+
+**Context:** Needed a zero-setup local database so any contributor (or AI assistant) can run the app without provisioning external infrastructure.
+
+**Decision:** SQLite via `DATABASE_URL="file:./dev.db"`, explicitly documented as dev-only and provider-swappable for production (see `docs/DATABASE.md`).
+
+**Alternatives Considered:**
+- *Dockerized PostgreSQL from day one.* More production-realistic, but adds setup friction (Docker dependency, container lifecycle) for every environment, including CI.
+- *In-memory database.* No persistence between runs — unworkable for iterative development against real seeded data.
+
+**Consequences:** `prisma/dev.db` is a single gitignored file; no database server process to manage locally. Some Prisma features behave differently under SQLite than under Postgres (e.g. enums are emulated, not native).
+
+**Trade-offs:** Fast, frictionless local development, in exchange for deferring the production-database decision — tracked under Epic 10 (Production Deployment) in `docs/EPIC_PROGRESS.md`.
+
+---
+
+## ADR-014 — Cross-cutting Activity Log via a shared `activityService`
+
+**Status:** Accepted
+**Date:** 2026-07-09
+
+**Context:** Nearly every mutating action across domains (customer CRUD, employee CRUD, workflow assignment, document upload/rename/delete) needs an audit trail, surfaced on the dashboard's Recent Activity feed.
+
+**Decision:** One `ActivityLog` Prisma model plus a single shared `activityService.logActivity({ action, details })`, called by other services immediately after a successful mutation. Activity logging failures must never prevent the primary business operation from succeeding — a failure is caught and logged to the console rather than propagated.
+
+**Alternatives Considered:**
+- *Per-domain activity tables.* Would fragment the dashboard's activity feed across multiple sources instead of one queryable log.
+- *Database triggers.* Invisible to application code, harder to test, and more limited under SQLite than under Postgres.
+
+**Consequences:** Every new mutating service method follows the same one-line `activityService.logActivity(...)` call pattern; the dashboard's activity feed never needs domain-specific logic to assemble.
+
+**Trade-offs:** A silently-swallowed logging failure means an activity-log outage could go unnoticed without separate monitoring — accepted because the log is informational, not the system of record for the mutation itself.
+
+---
+
+## ADR-015 — Local disk storage for documents, behind a `StorageProvider` abstraction
+
+**Status:** Accepted
+**Date:** 2026-07-10
+
+**Context:** Epic 4 (Document Management) needed real file upload/storage. Three options were on the table: local disk, cloud object storage (S3-compatible), or treating the existing `Customer.googleDriveFolder` string field as a real Google Drive integration.
+
+**Decision:** Local disk storage under `storage/documents/customers/{customerId}/{year}/{category}/` — gitignored, outside `public/`, served only through authenticated API routes. Abstracted behind a `StorageProvider` interface (`lib/storage/StorageProvider.ts`), with `LocalStorageProvider` as the only current implementation, so a future S3 or Google Drive provider is a swap behind `lib/storage/index.ts`, not a rewrite of `document.service.ts`.
+
+**Alternatives Considered:**
+- *Cloud object storage (S3-compatible) from day one.* Production-ready immediately, but requires new credentials, a new SDK dependency, and a provider decision before Epic 4 could even start.
+- *Real Google Drive integration via `Customer.googleDriveFolder`.* That field is currently just a manually-entered link, not an integration point — turning it into one requires OAuth/service-account setup, a much larger scope than a document metadata table.
+
+**Consequences:** Zero new cloud dependencies for Epic 4. `Document.filePath` stores a path relative to the storage root; `LocalStorageProvider` resolves and validates it as path-traversal-safe before every read/write/delete.
+
+**Trade-offs:** Not viable for a multi-instance/horizontally-scaled deployment, since local disk isn't shared across instances — accepted for the current single-instance deployment model; the `StorageProvider` abstraction exists specifically so this can be revisited without a service-layer rewrite.
+
+---
+
+## ADR-016 — Separate Backend / UI / Docs commits
+
+**Status:** Accepted
+**Date:** 2026-07-11
+
+**Context:** Earlier epics sometimes bundled backend, UI, and documentation changes into a single commit per milestone, making it harder to review, revert, or scope-audit one layer independently of the others.
+
+**Decision:** Every milestone's work lands as separate, single-responsibility commits — Backend, UI, and Docs are never mixed in the same commit. Formalized in `CONTRIBUTING.md`'s Development Workflow and `PROMPTS.md`'s FAST MODE v2 Commit Rules.
+
+**Alternatives Considered:**
+- *One commit per epic/milestone regardless of layer.* Simpler history, but makes `git revert`/`git bisect` across layers imprecise and complicates the Scope Audit step (`docs/GIT_WORKFLOW.md`), since a mixed commit's diff is harder to verify against a single stated purpose.
+
+**Consequences:** A single epic now produces multiple commits — see the Commit Plan structure used in `docs/MILESTONES/` epic documents.
+
+**Trade-offs:** More commits per unit of shipped work, in exchange for a cleaner, independently-revertible, more auditable history.

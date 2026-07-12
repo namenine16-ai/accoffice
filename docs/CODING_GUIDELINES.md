@@ -43,6 +43,7 @@ See `docs/PROJECT_STRUCTURE.md` for the full folder-by-folder reference. Summary
 
 - **Server Actions are not currently used anywhere in this codebase.** All mutations go through `app/api/*` routes called via `fetch()`. If Server Actions are introduced later, they must follow the same rule as API routes: call a service, never Prisma directly.
 - **API Routes** are the thin HTTP layer — parse, validate (Zod), call one service method, respond via `lib/api-error.ts`.
+- **Dynamic route params are a `Promise`** in Next.js 16 — both page routes (`app/**/[id]/page.tsx`) and API routes (`app/api/**/[id]/route.ts`) must `await params` before use.
 - **Middleware** (`middleware.ts`) runs on the Edge Runtime — no Prisma, no Node-only APIs. See `docs/SECURITY.md` and ADR-002.
 - **Layouts** — `app/layout.tsx` is the single root layout and currently reads cookies on every request (session + sidebar state), which makes the whole app dynamically rendered. This is a deliberate, accepted trade-off (ADR-007), not something to "fix" without revisiting that decision.
 - **Loading states** — this project does **not** use Next.js's `loading.tsx` file convention. Instead, pages render an inline `Skeleton` component while `useEffect`-driven client-side fetches are in flight. Follow the existing pattern rather than introducing `loading.tsx` inconsistently.
@@ -55,6 +56,23 @@ See `docs/PROJECT_STRUCTURE.md` for the full folder-by-folder reference. Summary
 - **Pagination** — there is **no server-side pagination** yet. `employeeRepository.findAll()` / `customerRepository.findAll()` fetch the entire table, and `CustomerTable.tsx` paginates client-side over the full result set. This is a known scalability limitation, not a pattern to be proud of — flag it if a table's data volume becomes large enough to matter.
 - **Filtering** — `workflowRepository.findTasks(filters)` is the model to follow: build a `Prisma.<Model>WhereInput` conditionally from an optional filters object, server-side.
 - **Searching** — currently **inconsistent**: `workflowRepository` does server-side `contains` search via Prisma; `CustomerTable.tsx` does client-side substring search over the already-fetched full list. New search features should default to the server-side (`workflowRepository`) pattern, especially once server-side pagination is added — client-side search only works because the full customer list is small enough to fetch entirely today.
+
+## Validation Rules
+
+- Zod is the single source of truth for input shape, one schema per domain in `validators/`.
+- Server-side `.safeParse()` is authoritative — it runs before any business logic or database call, on every mutating route.
+- Client-side validation (`react-hook-form` + `zodResolver`) points at the same schema as a UX convenience — it is never the only check, and a server route must never trust it.
+
+## Error Handling Rules
+
+- API routes should use the project's shared error handling mechanism — structured server-side logging (scope, message, stack, timestamp) plus a generic, client-facing message. Stack traces and Prisma internals must never reach the HTTP response body.
+- Services throw typed, domain-specific error classes (e.g. `DocumentUploadError`) for expected failure cases; the calling API route catches them and maps to the correct HTTP status, rather than the service returning `null`/a sentinel value.
+
+## Activity Logging Rules
+
+- Cross-cutting audit logging goes through the single shared `activityService.logActivity({ action, details })`, called by a service immediately after a successful mutation.
+- Activity logging failures must never prevent the primary business operation from succeeding — a failure is caught and logged to the console rather than propagated (see ADR-014).
+- Action names follow `<domain>.<verb_past_tense>` (e.g. `document.uploaded`, `document.renamed`, `employee.role_changed`) — check existing action names in a domain's service before inventing a new naming style for it.
 
 ## Performance Rules
 
