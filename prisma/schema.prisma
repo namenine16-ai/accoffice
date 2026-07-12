@@ -34,6 +34,7 @@ model Customer {
 
   tasks     CustomerTask[]
   documents Document[]
+  taxTasks  TaxTask[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -68,24 +69,26 @@ model CustomerTask {
   employee Employee? @relation(fields: [assignedEmployeeId], references: [id], onDelete: SetNull)
 
   documents Document[]
+  taxTasks  TaxTask[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model User {
-  id                Int           @id @default(autoincrement())
-  email             String        @unique
+  id                Int             @id @default(autoincrement())
+  email             String          @unique
   password          String
   name              String?
-  isActive          Boolean       @default(true)
-  employee          Employee?     @relation("UserEmployee")
+  isActive          Boolean         @default(true)
+  employee          Employee?       @relation("UserEmployee")
   roles             Role[]
   activityLogs      ActivityLog[]
   uploadedDocuments Document[]
   deletedAt         DateTime?
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  taxSubmissions    TaxSubmission[]
 }
 
 model Role {
@@ -125,6 +128,7 @@ model Employee {
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   customerTasks CustomerTask[]
+  taxTasks      TaxTask[]
 }
 
 model ActivityLog {
@@ -184,4 +188,106 @@ model Document {
   deletedAt DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum TaxTaskStatus {
+  PENDING
+  READY
+  IN_PROGRESS
+  WAITING_DOCUMENTS
+  FILED
+  COMPLETED
+  CANCELLED
+}
+
+enum TaxSubmissionStatus {
+  SUBMITTED
+  ACCEPTED
+  REJECTED
+}
+
+model TaxType {
+  id          Int     @id @default(autoincrement())
+  code        String  @unique
+  name        String
+  description String?
+  isActive    Boolean @default(true)
+
+  dueDateRule DueDateRule?
+  taxTasks    TaxTask[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DueDateRule {
+  id        Int     @id @default(autoincrement())
+  taxTypeId Int     @unique
+  taxType   TaxType @relation(fields: [taxTypeId], references: [id], onDelete: Cascade)
+
+  dayOfMonth             Int
+  monthOffset            Int     @default(1)
+  allowWeekendAdjustment Boolean @default(true)
+  allowHolidayAdjustment Boolean @default(true)
+  notes                  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TaxTask {
+  id                 Int          @id @default(autoincrement())
+  customerId         Int
+  customer           Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  customerTaskId     Int
+  customerTask       CustomerTask @relation(fields: [customerTaskId], references: [id], onDelete: Cascade)
+  taxTypeId          Int
+  taxType            TaxType      @relation(fields: [taxTypeId], references: [id], onDelete: Restrict)
+  assignedEmployeeId Int?
+  employee           Employee?    @relation(fields: [assignedEmployeeId], references: [id], onDelete: SetNull)
+
+  month       Int
+  year        Int
+  dueDate     DateTime
+  status      TaxTaskStatus @default(PENDING)
+  priority    Priority      @default(NORMAL)
+  remarks     String?
+  completedAt DateTime?
+
+  submissions TaxSubmission[]
+
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([customerId, year, month])
+  @@index([assignedEmployeeId])
+  @@index([deletedAt])
+  @@index([status, dueDate])
+}
+
+model TaxSubmission {
+  id            Int     @id @default(autoincrement())
+  taxTaskId     Int
+  taxTask       TaxTask @relation(fields: [taxTaskId], references: [id], onDelete: Cascade)
+  submittedById Int?
+  submittedBy   User?   @relation(fields: [submittedById], references: [id], onDelete: SetNull)
+
+  submittedAt     DateTime            @default(now())
+  receivedDate    DateTime?
+  referenceNumber String?
+  amount          Float?
+  status          TaxSubmissionStatus @default(SUBMITTED)
+  rejectedReason  String?
+  notes           String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
