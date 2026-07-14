@@ -4,7 +4,14 @@ import { taxTaskService } from "@/services/tax-task.service";
 import { activityService } from "@/services/activity.service";
 import type { Prisma } from "@prisma/client";
 
-export class TaxSubmissionError extends Error {}
+export class TaxSubmissionError extends Error {
+  notFound: boolean;
+
+  constructor(message: string, options?: { notFound?: boolean }) {
+    super(message);
+    this.notFound = options?.notFound ?? false;
+  }
+}
 
 interface CreateTaxSubmissionInput {
   submittedById?: number;
@@ -27,7 +34,7 @@ export const taxSubmissionService = {
   async createSubmission(taxTaskId: number, input: CreateTaxSubmissionInput = {}) {
     const task = await taxTaskRepository.findById(taxTaskId);
     if (!task) {
-      throw new TaxSubmissionError("ไม่พบงานภาษีที่เกี่ยวข้อง");
+      throw new TaxSubmissionError("ไม่พบงานภาษีที่เกี่ยวข้อง", { notFound: true });
     }
 
     const periodStart = new Date(task.year, task.month - 1, 1);
@@ -59,7 +66,7 @@ export const taxSubmissionService = {
   async updateSubmissionStatus(id: number, status: "ACCEPTED" | "REJECTED", rejectedReason?: string) {
     const submission = await taxSubmissionRepository.findById(id);
     if (!submission) {
-      throw new TaxSubmissionError("ไม่พบข้อมูลการยื่นแบบ");
+      throw new TaxSubmissionError("ไม่พบข้อมูลการยื่นแบบ", { notFound: true });
     }
 
     const updated = await taxSubmissionRepository.update(id, {

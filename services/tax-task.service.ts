@@ -3,7 +3,14 @@ import { dueDateRuleService } from "@/services/due-date-rule.service";
 import { activityService } from "@/services/activity.service";
 import type { Priority, TaxTaskStatus } from "@prisma/client";
 
-export class TaxTaskError extends Error {}
+export class TaxTaskError extends Error {
+  notFound: boolean;
+
+  constructor(message: string, options?: { notFound?: boolean }) {
+    super(message);
+    this.notFound = options?.notFound ?? false;
+  }
+}
 
 interface CreateTaxTaskInput {
   customerId: number;
@@ -69,7 +76,7 @@ export const taxTaskService = {
   async updateTask(id: number, input: UpdateTaxTaskInput) {
     const existing = await taxTaskRepository.findById(id);
     if (!existing) {
-      throw new TaxTaskError("ไม่พบงานภาษี");
+      throw new TaxTaskError("ไม่พบงานภาษี", { notFound: true });
     }
 
     const task = await taxTaskRepository.update(id, {
@@ -99,7 +106,7 @@ export const taxTaskService = {
   async updateStatus(id: number, status: TaxTaskStatus) {
     const existing = await taxTaskRepository.findById(id);
     if (!existing) {
-      throw new TaxTaskError("ไม่พบงานภาษี");
+      throw new TaxTaskError("ไม่พบงานภาษี", { notFound: true });
     }
 
     if (existing.status === status) {

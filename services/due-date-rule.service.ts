@@ -2,7 +2,14 @@ import { dueDateRuleRepository } from "@/repositories/due-date-rule.repository";
 import { activityService } from "@/services/activity.service";
 import type { Prisma } from "@prisma/client";
 
-export class DueDateRuleError extends Error {}
+export class DueDateRuleError extends Error {
+  notFound: boolean;
+
+  constructor(message: string, options?: { notFound?: boolean }) {
+    super(message);
+    this.notFound = options?.notFound ?? false;
+  }
+}
 
 function addMonths(year: number, month: number, offset: number) {
   const total = month - 1 + offset;
@@ -78,7 +85,7 @@ export const dueDateRuleService = {
   async computeDueDate(taxTypeId: number, month: number, year: number) {
     const rule = await dueDateRuleRepository.findByTaxTypeId(taxTypeId);
     if (!rule) {
-      throw new DueDateRuleError("ไม่พบกฎวันครบกำหนดสำหรับประเภทภาษีนี้");
+      throw new DueDateRuleError("ไม่พบกฎวันครบกำหนดสำหรับประเภทภาษีนี้", { notFound: true });
     }
 
     const { year: dueYear, month: dueMonth } = addMonths(year, month, rule.monthOffset);
