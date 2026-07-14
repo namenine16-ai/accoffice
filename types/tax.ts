@@ -7,3 +7,12 @@ export type TaxTypeRow = Prisma.TaxTypeGetPayload<{
 export type DueDateRuleRow = Prisma.DueDateRuleGetPayload<{
   include: { taxType: true };
 }>;
+
+export type TaxTaskRow = Prisma.TaxTaskGetPayload<{
+  include: {
+    customer: true;
+    customerTask: true;
+    taxType: true;
+    employee: true;
+  };
+}>;
