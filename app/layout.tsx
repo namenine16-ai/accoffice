@@ -4,6 +4,9 @@ import { Geist, Geist_Mono, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import Sidebar from "@/components/layout/Sidebar";
 import { Providers } from "@/components/layout/Providers";
+import { PermissionProvider } from "@/components/auth/PermissionProvider";
+import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+import { permissionsForRoles } from "@/lib/permissions";
 import { cn } from "@/utils/cn";
 
 const jetbrainsMono = JetBrains_Mono({subsets:['latin'],variable:'--font-mono'});
@@ -33,6 +36,10 @@ export default async function RootLayout({
   const headersList = await headers();
   const isAuthPage = headersList.get("x-pathname") === "/login";
 
+  const token = cookieStore.get(SESSION_COOKIE_NAME)?.value;
+  const session = token ? await verifySessionToken(token) : null;
+  const permissions = permissionsForRoles(session?.roles ?? []);
+
   return (
     <html
       lang="th"
@@ -40,16 +47,18 @@ export default async function RootLayout({
     >
       <body>
         <Providers>
-          {isAuthPage ? (
-            children
-          ) : (
-            <div className="flex min-h-screen flex-col md:flex-row">
-              <Sidebar initialCollapsed={sidebarCollapsed} />
-              <main className="flex-1 p-5">
-                {children}
-              </main>
-            </div>
-          )}
+          <PermissionProvider session={session} permissions={permissions}>
+            {isAuthPage ? (
+              children
+            ) : (
+              <div className="flex min-h-screen flex-col md:flex-row">
+                <Sidebar initialCollapsed={sidebarCollapsed} />
+                <main className="flex-1 p-5">
+                  {children}
+                </main>
+              </div>
+            )}
+          </PermissionProvider>
         </Providers>
       </body>
     </html>

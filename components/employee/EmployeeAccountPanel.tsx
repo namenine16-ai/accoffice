@@ -15,8 +15,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/components/ui/use-toast";
+import { ROLE_LABELS } from "@/lib/permissions";
 import type { EmployeeWithAccount } from "@/types/employee";
 import type { RoleName } from "@/types/auth";
+
+const ROLE_OPTIONS = Object.entries(ROLE_LABELS) as [RoleName, string][];
 
 interface EmployeeAccountPanelProps {
   employee: EmployeeWithAccount;
@@ -108,8 +111,11 @@ export function EmployeeAccountPanel({ employee }: EmployeeAccountPanelProps) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="staff">staff</SelectItem>
-              <SelectItem value="admin">admin</SelectItem>
+              {ROLE_OPTIONS.map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
         </div>
@@ -157,8 +163,11 @@ export function EmployeeAccountPanel({ employee }: EmployeeAccountPanelProps) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="staff">staff</SelectItem>
-              <SelectItem value="admin">admin</SelectItem>
+              {ROLE_OPTIONS.map(([value, label]) => (
+                <SelectItem key={value} value={value}>
+                  {label}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <Button

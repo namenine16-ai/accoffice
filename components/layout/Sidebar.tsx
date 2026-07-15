@@ -11,18 +11,19 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { usePermissions } from "@/hooks/usePermissions";
 import { cn } from "@/utils/cn";
 
 const menus = [
-  { icon: "🏠", label: "Dashboard", href: "/dashboard" },
-  { icon: "👥", label: "ลูกค้า", href: "/customers" },
-  { icon: "📅", label: "งานประจำเดือน", href: "/workflow" },
-  { icon: "📑", label: "ภาษี", href: "/tax" },
-  { icon: "📂", label: "เอกสาร", href: "/documents" },
-  { icon: "💰", label: "การเงิน", href: "/finance" },
-  { icon: "📊", label: "รายงาน", href: "/reports" },
-  { icon: "👨‍💼", label: "พนักงาน", href: "/employees" },
-  { icon: "⚙️", label: "ตั้งค่า", href: "/settings" },
+  { icon: "🏠", label: "Dashboard", href: "/dashboard", permission: "dashboard:view" },
+  { icon: "👥", label: "ลูกค้า", href: "/customers", permission: "customers:view" },
+  { icon: "📅", label: "งานประจำเดือน", href: "/workflow", permission: "workflow:view" },
+  { icon: "📑", label: "ภาษี", href: "/tax", permission: "tax:view" },
+  { icon: "📂", label: "เอกสาร", href: "/documents", permission: "documents:view" },
+  { icon: "💰", label: "การเงิน", href: "/finance", permission: "finance:view" },
+  { icon: "📊", label: "รายงาน", href: "/reports", permission: "reports:view" },
+  { icon: "👨‍💼", label: "พนักงาน", href: "/employees", permission: "employees:view" },
+  { icon: "⚙️", label: "ตั้งค่า", href: "/settings", permission: "settings:view" },
 ];
 
 const SIDEBAR_COOKIE_NAME = "sidebar_collapsed";
@@ -35,10 +36,12 @@ function SidebarNav({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  const { hasPermission } = usePermissions();
+  const visibleMenus = menus.filter((menu) => hasPermission(menu.permission));
 
   return (
     <nav className="space-y-2">
-      {menus.map((menu) => (
+      {visibleMenus.map((menu) => (
         <Link
           key={menu.href}
           href={menu.href}

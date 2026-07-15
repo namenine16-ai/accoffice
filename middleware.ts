@@ -1,7 +1,13 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { SESSION_COOKIE_NAME, hasRole, verifySessionToken } from "@/lib/auth";
+import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
+import { hasPermission } from "@/lib/permissions";
 
-const ADMIN_ONLY_PATHS = ["/settings", "/employees", "/reports", "/finance"];
+const ROUTE_PERMISSIONS: Record<string, string> = {
+  "/reports": "reports:view",
+  "/employees": "employees:view",
+  "/settings": "settings:view",
+  "/finance": "finance:view",
+};
 
 function isPublicPath(pathname: string): boolean {
   return (
@@ -12,16 +18,21 @@ function isPublicPath(pathname: string): boolean {
   );
 }
 
-function isAdminOnlyPath(pathname: string): boolean {
-  return ADMIN_ONLY_PATHS.some((path) => {
+function requiredPermissionForPath(pathname: string): string | null {
+  for (const [path, permission] of Object.entries(ROUTE_PERMISSIONS)) {
     const apiPath = `/api${path}`;
-    return (
+    const matches =
       pathname === path ||
       pathname.startsWith(`${path}/`) ||
       pathname === apiPath ||
-      pathname.startsWith(`${apiPath}/`)
-    );
-  });
+      pathname.startsWith(`${apiPath}/`);
+
+    if (matches) {
+      return permission;
+    }
+  }
+
+  return null;
 }
 
 function nextWithPathname(request: NextRequest, pathname: string) {
@@ -49,7 +60,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (isAdminOnlyPath(pathname) && !hasRole(session, "admin")) {
+  const requiredPermission = requiredPermissionForPath(pathname);
+
+  if (requiredPermission && !hasPermission(session.roles, requiredPermission)) {
     if (isApiRoute) {
       return NextResponse.json({ message: "ไม่มีสิทธิ์เข้าถึง" }, { status: 403 });
     }

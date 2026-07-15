@@ -1,7 +1,15 @@
 import type { RoleName } from "@/types/auth";
 
+export const ROLE_LABELS: Record<RoleName, string> = {
+  admin: "Partner",
+  manager: "Manager",
+  staff: "Staff",
+  intern: "Intern",
+};
+
 export const ROLE_PERMISSIONS: Record<RoleName, string[]> = {
   admin: [
+    "dashboard:*",
     "customers:*",
     "workflow:*",
     "tax:*",
@@ -10,16 +18,45 @@ export const ROLE_PERMISSIONS: Record<RoleName, string[]> = {
     "reports:*",
     "employees:*",
     "settings:*",
+    "users:*",
+  ],
+  manager: [
+    "dashboard:view",
+    "customers:view",
+    "customers:create",
+    "customers:edit",
+    "customers:delete",
+    "workflow:view",
+    "workflow:create",
+    "workflow:edit",
+    "workflow:delete",
+    "documents:view",
+    "documents:upload",
+    "documents:delete",
+    "tax:view",
+    "tax:create",
+    "tax:edit",
+    "tax:delete",
+    "reports:view",
+    "employees:view",
   ],
   staff: [
-    "customers:read",
-    "customers:write",
-    "workflow:read",
-    "workflow:write",
-    "tax:read",
-    "tax:write",
-    "documents:read",
-    "documents:write",
+    "dashboard:view",
+    "customers:view",
+    "customers:edit",
+    "workflow:view",
+    "workflow:edit",
+    "documents:view",
+    "documents:upload",
+    "tax:view",
+    "tax:edit",
+  ],
+  intern: [
+    "dashboard:view",
+    "customers:view",
+    "workflow:view",
+    "documents:view",
+    "tax:view",
   ],
 };
 

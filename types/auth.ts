@@ -1,4 +1,4 @@
-export type RoleName = "admin" | "staff";
+export type RoleName = "admin" | "manager" | "staff" | "intern";
 
 export interface SessionPayload {
   sub: string;
