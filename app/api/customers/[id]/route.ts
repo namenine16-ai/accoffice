@@ -1,7 +1,8 @@
 import { Prisma } from "@prisma/client";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { customerService } from "@/services/customer.service";
 import { apiErrorResponse } from "@/lib/api-error";
+import { requirePermission } from "@/lib/api-auth";
 
 type Context = {
   params: Promise<{
@@ -32,10 +33,13 @@ export async function GET(
 }
 
 export async function PUT(
-  request: Request,
+  request: NextRequest,
   { params }: Context
 ) {
   try {
+    const auth = await requirePermission(request, "customers:edit");
+    if (auth) return auth;
+
     const { id } = await params;
     const body = await request.json();
 
@@ -52,10 +56,13 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: Request,
+  request: NextRequest,
   { params }: Context
 ) {
   try {
+    const auth = await requirePermission(request, "customers:delete");
+    if (auth) return auth;
+
     const { id } = await params;
 
     await customerService.deleteCustomer(Number(id));

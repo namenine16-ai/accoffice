@@ -4,6 +4,7 @@ import { taxTaskService } from "@/services/tax-task.service";
 import { DueDateRuleError } from "@/services/due-date-rule.service";
 import { taxTaskCreateSchema } from "@/validators/tax";
 import { apiErrorResponse } from "@/lib/api-error";
+import { requirePermission } from "@/lib/api-auth";
 
 function parseStatus(value: string | null): TaxTaskStatus | undefined {
   if (!value) return undefined;
@@ -46,6 +47,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requirePermission(request, "tax:create");
+    if (auth) return auth;
+
     const body = await request.json();
     const parsed = taxTaskCreateSchema.safeParse(body);
 

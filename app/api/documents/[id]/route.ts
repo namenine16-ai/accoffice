@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { documentService, DocumentUploadError } from "@/services/document.service";
 import { apiErrorResponse } from "@/lib/api-error";
 import { documentRenameSchema } from "@/validators/document";
+import { requirePermission } from "@/lib/api-auth";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -22,8 +23,11 @@ export async function GET(_request: Request, { params }: RouteParams) {
   }
 }
 
-export async function PATCH(request: Request, { params }: RouteParams) {
+export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
+    const auth = await requirePermission(request, "documents:edit");
+    if (auth) return auth;
+
     const { id } = await params;
     const body = await request.json();
     const parsed = documentRenameSchema.safeParse(body);
@@ -44,8 +48,11 @@ export async function PATCH(request: Request, { params }: RouteParams) {
   }
 }
 
-export async function DELETE(_request: Request, { params }: RouteParams) {
+export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
+    const auth = await requirePermission(request, "documents:delete");
+    if (auth) return auth;
+
     const { id } = await params;
     await documentService.deleteDocument(Number(id));
 

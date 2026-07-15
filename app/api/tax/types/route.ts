@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { taxTypeService, TaxTypeError } from "@/services/tax-type.service";
 import { taxTypeCreateSchema } from "@/validators/tax";
 import { apiErrorResponse } from "@/lib/api-error";
+import { requirePermission } from "@/lib/api-auth";
 
 export async function GET() {
   try {
@@ -14,6 +15,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requirePermission(request, "tax:create");
+    if (auth) return auth;
+
     const body = await request.json();
     const parsed = taxTypeCreateSchema.safeParse(body);
 

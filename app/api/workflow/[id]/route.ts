@@ -1,8 +1,9 @@
 import { Prisma } from "@prisma/client";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { workflowService, WorkflowTaskError } from "@/services/workflow.service";
 import { workflowTaskUpdateSchema } from "@/validators/workflow";
 import { apiErrorResponse } from "@/lib/api-error";
+import { requirePermission } from "@/lib/api-auth";
 
 type Context = {
   params: Promise<{
@@ -29,8 +30,11 @@ export async function GET(_request: Request, { params }: Context) {
   }
 }
 
-export async function PATCH(request: Request, { params }: Context) {
+export async function PATCH(request: NextRequest, { params }: Context) {
   try {
+    const auth = await requirePermission(request, "workflow:edit");
+    if (auth) return auth;
+
     const { id } = await params;
     const body = await request.json();
     const parsed = workflowTaskUpdateSchema.safeParse(body);

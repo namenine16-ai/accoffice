@@ -1,8 +1,9 @@
 import { Prisma } from "@prisma/client";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { employeeService } from "@/services/employee.service";
 import { employeeUpdateSchema } from "@/validators/employee";
 import { apiErrorResponse } from "@/lib/api-error";
+import { requirePermission } from "@/lib/api-auth";
 
 type Context = {
   params: Promise<{
@@ -29,8 +30,11 @@ export async function GET(_request: Request, { params }: Context) {
   }
 }
 
-export async function PUT(request: Request, { params }: Context) {
+export async function PUT(request: NextRequest, { params }: Context) {
   try {
+    const auth = await requirePermission(request, "employees:edit");
+    if (auth) return auth;
+
     const { id } = await params;
     const body = await request.json();
     const parsed = employeeUpdateSchema.safeParse(body);
@@ -50,8 +54,11 @@ export async function PUT(request: Request, { params }: Context) {
   }
 }
 
-export async function DELETE(_request: Request, { params }: Context) {
+export async function DELETE(request: NextRequest, { params }: Context) {
   try {
+    const auth = await requirePermission(request, "employees:delete");
+    if (auth) return auth;
+
     const { id } = await params;
     await employeeService.deleteEmployee(Number(id));
     return NextResponse.json({ success: true });

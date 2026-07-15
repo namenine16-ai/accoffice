@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { employeeService } from "@/services/employee.service";
 import { employeeCreateSchema } from "@/validators/employee";
 import { apiErrorResponse } from "@/lib/api-error";
+import { requirePermission } from "@/lib/api-auth";
 
 export async function GET() {
   try {
@@ -12,8 +13,11 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const auth = await requirePermission(request, "employees:create");
+    if (auth) return auth;
+
     const body = await request.json();
     const parsed = employeeCreateSchema.safeParse(body);
 

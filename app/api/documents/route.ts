@@ -5,6 +5,7 @@ import { authService } from "@/services/auth.service";
 import { sessionCookieOptions } from "@/lib/auth";
 import { documentUploadMetadataSchema } from "@/validators/document";
 import { apiErrorResponse } from "@/lib/api-error";
+import { requirePermission } from "@/lib/api-auth";
 
 function parseCategory(value: string | null): DocumentCategory | undefined {
   if (!value) return undefined;
@@ -31,6 +32,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requirePermission(request, "documents:upload");
+    if (auth) return auth;
+
     const formData = await request.formData();
     const file = formData.get("file");
 

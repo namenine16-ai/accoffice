@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { employeeService, EmployeeAccountError } from "@/services/employee.service";
 import { employeeAccountCreateSchema, employeeAccountUpdateSchema } from "@/validators/employee";
 import { apiErrorResponse } from "@/lib/api-error";
+import { requirePermission } from "@/lib/api-auth";
 
 type Context = {
   params: Promise<{
@@ -9,8 +10,11 @@ type Context = {
   }>;
 };
 
-export async function POST(request: Request, { params }: Context) {
+export async function POST(request: NextRequest, { params }: Context) {
   try {
+    const auth = await requirePermission(request, "users:manage");
+    if (auth) return auth;
+
     const { id } = await params;
     const body = await request.json();
     const parsed = employeeAccountCreateSchema.safeParse(body);
@@ -30,8 +34,11 @@ export async function POST(request: Request, { params }: Context) {
   }
 }
 
-export async function PATCH(request: Request, { params }: Context) {
+export async function PATCH(request: NextRequest, { params }: Context) {
   try {
+    const auth = await requirePermission(request, "users:manage");
+    if (auth) return auth;
+
     const { id } = await params;
     const body = await request.json();
     const parsed = employeeAccountUpdateSchema.safeParse(body);

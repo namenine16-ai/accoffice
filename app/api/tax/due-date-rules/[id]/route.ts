@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { Prisma } from "@prisma/client";
 import { dueDateRuleService } from "@/services/due-date-rule.service";
 import { dueDateRuleUpdateSchema } from "@/validators/tax";
 import { apiErrorResponse } from "@/lib/api-error";
+import { requirePermission } from "@/lib/api-auth";
 
 type Context = {
   params: Promise<{
@@ -29,8 +30,11 @@ export async function GET(_request: Request, { params }: Context) {
   }
 }
 
-export async function PATCH(request: Request, { params }: Context) {
+export async function PATCH(request: NextRequest, { params }: Context) {
   try {
+    const auth = await requirePermission(request, "tax:edit");
+    if (auth) return auth;
+
     const { id } = await params;
     const body = await request.json();
     const parsed = dueDateRuleUpdateSchema.safeParse(body);
@@ -50,8 +54,11 @@ export async function PATCH(request: Request, { params }: Context) {
   }
 }
 
-export async function DELETE(_request: Request, { params }: Context) {
+export async function DELETE(request: NextRequest, { params }: Context) {
   try {
+    const auth = await requirePermission(request, "tax:delete");
+    if (auth) return auth;
+
     const { id } = await params;
     await dueDateRuleService.deleteRule(Number(id));
 

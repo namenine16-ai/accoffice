@@ -1,7 +1,8 @@
 import type { Prisma } from "@prisma/client";
-import { NextResponse } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { customerService } from "@/services/customer.service";
 import { apiErrorResponse } from "@/lib/api-error";
+import { requirePermission } from "@/lib/api-auth";
 
 interface CustomerCreateBody {
   code: string;
@@ -38,8 +39,11 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const auth = await requirePermission(request, "customers:create");
+    if (auth) return auth;
+
     const body = (await request.json()) as CustomerCreateBody;
 
     const customerData: Prisma.CustomerCreateInput = {
