@@ -15,13 +15,18 @@ export interface TaskStatusCount {
 
 interface TaskStatusDonutChartProps {
   data: TaskStatusCount[];
+  title?: string;
+  description?: string;
 }
 
-export function TaskStatusDonutChart({ data }: TaskStatusDonutChartProps) {
+export function TaskStatusDonutChart({ data, title, description }: TaskStatusDonutChartProps) {
+  const resolvedTitle = title ?? "สัดส่วนสถานะงาน";
+  const resolvedDescription = description ?? "กระจายงานทั้งหมดตามสถานะปัจจุบัน";
+
   return (
     <ChartCard
-      title="สัดส่วนสถานะงาน"
-      description="กระจายงานทั้งหมดตามสถานะปัจจุบัน"
+      title={resolvedTitle}
+      description={resolvedDescription}
       tableColumns={[
         { key: "label", label: "สถานะ" },
         { key: "count", label: "จำนวนงาน" },
