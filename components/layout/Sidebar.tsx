@@ -12,6 +12,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { usePermissions } from "@/hooks/usePermissions";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { cn } from "@/utils/cn";
 
 const menus = [
@@ -80,26 +81,29 @@ export default function Sidebar({
     <>
       <div className="flex items-center justify-between border-b border-slate-800 bg-slate-900 p-3 text-white md:hidden">
         <span className="text-lg font-bold">📊 AccOffice</span>
-        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-          <SheetTrigger
-            render={
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-white hover:bg-slate-800"
-              />
-            }
-          >
-            <ListIcon />
-            <span className="sr-only">เปิดเมนู</span>
-          </SheetTrigger>
-          <SheetContent side="left" className="bg-slate-900 text-white">
-            <SheetTitle className="p-4 text-white">📊 AccOffice</SheetTitle>
-            <div className="px-4 pb-4">
-              <SidebarNav onNavigate={() => setMobileOpen(false)} />
-            </div>
-          </SheetContent>
-        </Sheet>
+        <div className="flex items-center gap-1">
+          <NotificationBell className="text-white hover:bg-slate-800" />
+          <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+            <SheetTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-white hover:bg-slate-800"
+                />
+              }
+            >
+              <ListIcon />
+              <span className="sr-only">เปิดเมนู</span>
+            </SheetTrigger>
+            <SheetContent side="left" className="bg-slate-900 text-white">
+              <SheetTitle className="p-4 text-white">📊 AccOffice</SheetTitle>
+              <div className="px-4 pb-4">
+                <SidebarNav onNavigate={() => setMobileOpen(false)} />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
       </div>
 
       <aside
@@ -110,15 +114,18 @@ export default function Sidebar({
       >
         <div className="mb-8 flex items-center justify-between">
           {!collapsed && <h1 className="text-2xl font-bold">📊 AccOffice</h1>}
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            className="text-white hover:bg-slate-800"
-            onClick={toggleCollapsed}
-          >
-            <SidebarSimpleIcon />
-            <span className="sr-only">พับ/ขยายเมนู</span>
-          </Button>
+          <div className="flex items-center gap-1">
+            <NotificationBell className="text-white hover:bg-slate-800" />
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="text-white hover:bg-slate-800"
+              onClick={toggleCollapsed}
+            >
+              <SidebarSimpleIcon />
+              <span className="sr-only">พับ/ขยายเมนู</span>
+            </Button>
+          </div>
         </div>
         <SidebarNav collapsed={collapsed} />
       </aside>

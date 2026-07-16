@@ -5,6 +5,7 @@ import "./globals.css";
 import Sidebar from "@/components/layout/Sidebar";
 import { Providers } from "@/components/layout/Providers";
 import { PermissionProvider } from "@/components/auth/PermissionProvider";
+import { NotificationProvider } from "@/components/notifications/NotificationProvider";
 import { SESSION_COOKIE_NAME, verifySessionToken } from "@/lib/auth";
 import { permissionsForRoles } from "@/lib/permissions";
 import { cn } from "@/utils/cn";
@@ -51,12 +52,14 @@ export default async function RootLayout({
             {isAuthPage ? (
               children
             ) : (
-              <div className="flex min-h-screen flex-col md:flex-row">
-                <Sidebar initialCollapsed={sidebarCollapsed} />
-                <main className="flex-1 p-5">
-                  {children}
-                </main>
-              </div>
+              <NotificationProvider>
+                <div className="flex min-h-screen flex-col md:flex-row">
+                  <Sidebar initialCollapsed={sidebarCollapsed} />
+                  <main className="flex-1 p-5">
+                    {children}
+                  </main>
+                </div>
+              </NotificationProvider>
             )}
           </PermissionProvider>
         </Providers>

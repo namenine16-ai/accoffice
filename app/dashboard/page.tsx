@@ -12,6 +12,7 @@ import { OfficeHubStats } from "@/components/dashboard/OfficeHubStats";
 import { CalendarCard } from "@/components/dashboard/CalendarCard";
 import { OfficeHubCharts } from "@/components/dashboard/OfficeHubCharts";
 import { TaxDeadlineDashboard } from "@/components/dashboard/TaxDeadlineDashboard";
+import { NotificationWidget } from "@/components/dashboard/NotificationWidget";
 import { Button } from "@/components/ui/button";
 import type { WorkflowTask } from "@/types/workflow";
 
@@ -256,6 +257,7 @@ export default function DashboardPage() {
 
           <div className="space-y-4">
             <OfficeHubNotifications notifications={notifications} />
+            <NotificationWidget />
             <CalendarCard tasks={tasks} selectedDate={selectedDate} onSelectDate={setSelectedDate} />
             <TaxDeadlineDashboard tasks={tasks} today={today} />
             <OfficeHubActivityList activities={activities} />
