@@ -1,9 +1,22 @@
 import { workflowRepository, type WorkflowFilters } from "@/repositories/workflow.repository";
+import { customerRepository } from "@/repositories/customer.repository";
 import { activityService } from "@/services/activity.service";
 import type { WorkflowTask } from "@/types/workflow";
 import type { WorkflowTaskUpdateInput } from "@/validators/workflow";
 
 export class WorkflowTaskError extends Error {}
+
+// Shared within the monthly generation flow only — not a refactor of the
+// unrelated hardcoded "ใช้งาน" strings already present in the Customer
+// module (forms, tables, validators), which stay untouched.
+export const ACTIVE_CUSTOMER_STATUS = "ใช้งาน";
+
+export interface GenerateMonthlyTasksResult {
+  totalCustomers: number;
+  generated: number;
+  skipped: number;
+  failed: number;
+}
 
 function normalizeTasks(tasks: Array<Awaited<ReturnType<typeof workflowRepository.findTasks>>[number]>) {
   return tasks.map((task) => ({
@@ -93,5 +106,57 @@ export const workflowService = {
     }
 
     return task;
+  },
+
+  async generateMonthlyTasks(month: number, year: number): Promise<GenerateMonthlyTasksResult> {
+    const [allCustomers, existingTasks] = await Promise.all([
+      customerRepository.findAll(),
+      workflowRepository.findTasks({ month, year }),
+    ]);
+
+    const activeCustomers = allCustomers.filter((customer) => customer.status === ACTIVE_CUSTOMER_STATUS);
+    const existingCustomerIds = new Set(existingTasks.map((task) => task.customerId));
+
+    let generated = 0;
+    let skipped = 0;
+    let failed = 0;
+
+    for (const customer of activeCustomers) {
+      if (existingCustomerIds.has(customer.id)) {
+        skipped += 1;
+        continue;
+      }
+
+      try {
+        await workflowRepository.createTask({
+          customer: { connect: { id: customer.id } },
+          month,
+          year,
+        });
+        generated += 1;
+      } catch (error) {
+        failed += 1;
+        console.error(
+          JSON.stringify({
+            level: "error",
+            scope: "workflow.generateMonthlyTasks",
+            customerId: customer.id,
+            error: String(error),
+          })
+        );
+      }
+    }
+
+    await activityService.logActivity({
+      action: "workflow.monthly_generation",
+      details: `สร้างงานประจำเดือน ${month}/${year}: สร้างสำเร็จ ${generated} ราย, ข้าม ${skipped} ราย, ล้มเหลว ${failed} ราย (จากลูกค้าที่ใช้งานทั้งหมด ${activeCustomers.length} ราย)`,
+    });
+
+    return {
+      totalCustomers: activeCustomers.length,
+      generated,
+      skipped,
+      failed,
+    };
   },
 };

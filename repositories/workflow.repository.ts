@@ -79,6 +79,16 @@ export const workflowRepository = {
     });
   },
 
+  createTask(data: Prisma.CustomerTaskCreateInput) {
+    return prisma.customerTask.create({
+      data,
+      include: {
+        customer: true,
+        employee: true,
+      },
+    });
+  },
+
   findAllCustomers() {
     return prisma.customer.findMany({
       select: {
