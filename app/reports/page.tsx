@@ -22,6 +22,17 @@ import {
   CustomerCountByCategoryChart,
   type CategoryCount,
 } from "@/components/dashboard/charts/CustomerCountByCategoryChart";
+import { TasksByMonthChart, type MonthlyTaskCount } from "@/components/dashboard/charts/TasksByMonthChart";
+import { SlaTrendChart, type MonthlySlaRate } from "@/components/dashboard/charts/SlaTrendChart";
+import { SlaWorkloadKpiCards } from "@/components/dashboard/SlaWorkloadKpiCards";
+import {
+  EmployeeWorkloadRankingTable,
+  type EmployeeWorkloadRow,
+} from "@/components/dashboard/EmployeeWorkloadRankingTable";
+import {
+  SlaDashboardFilters,
+  type SlaDashboardFilterValues,
+} from "@/components/dashboard/SlaDashboardFilters";
 import type { WorkflowTask } from "@/types/workflow";
 
 const statusLabels: Record<string, string> = {
@@ -42,6 +53,15 @@ interface ReportsCustomer {
   serviceFee: number;
   status: string;
   createdAt: string;
+}
+
+// GET /api/employees returns the full Employee record; the SLA & Workload
+// Dashboard only needs id/firstName/lastName for filter options and ranking,
+// so it declares its own local shape rather than modifying types/employee.ts.
+interface ReportsEmployee {
+  id: number;
+  firstName: string;
+  lastName: string;
 }
 
 function taskToRow(task: WorkflowTask): MiniTaskRow {
@@ -162,11 +182,121 @@ function toCustomerSummaryRow(customer: ReportsCustomer, responsibleEmployee: st
   };
 }
 
+// SLA & Workload Dashboard derivations
+
+function isSameDay(value: string | null, date: Date): boolean {
+  if (!value) return false;
+
+  const target = new Date(value);
+  return (
+    target.getFullYear() === date.getFullYear() &&
+    target.getMonth() === date.getMonth() &&
+    target.getDate() === date.getDate()
+  );
+}
+
+/**
+ * Month/Year/Customer always apply; the Employee filter is optionally
+ * excluded so the Employee Workload Ranking table can keep showing every
+ * employee's row (per Sprint 4's "show ALL employees" requirement) even
+ * when a specific employee is selected elsewhere on the same filter bar.
+ */
+function applySlaFilters(
+  tasks: WorkflowTask[],
+  filters: SlaDashboardFilterValues,
+  includeEmployeeFilter: boolean
+): WorkflowTask[] {
+  return tasks.filter((task) => {
+    if (filters.month !== null && task.month !== filters.month) return false;
+    if (filters.year !== null && task.year !== filters.year) return false;
+    if (includeEmployeeFilter && filters.employeeId !== null && task.employee?.id !== filters.employeeId) return false;
+    if (filters.customerId !== null && task.customer.id !== filters.customerId) return false;
+    return true;
+  });
+}
+
+interface MonthBucket {
+  year: number;
+  month: number;
+  label: string;
+}
+
+const monthNamesTh = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+
+// "Tasks by Month" and "SLA Trend" are exempt from the filter bar and always
+// show the trailing 6 months, matching OfficeHubCharts.tsx's existing convention.
+function getLastSixMonthBuckets(referenceDate: Date): MonthBucket[] {
+  const buckets: MonthBucket[] = [];
+
+  for (let offset = 5; offset >= 0; offset -= 1) {
+    const bucketDate = new Date(referenceDate.getFullYear(), referenceDate.getMonth() - offset, 1);
+    buckets.push({
+      year: bucketDate.getFullYear(),
+      month: bucketDate.getMonth() + 1,
+      label: monthNamesTh[bucketDate.getMonth()],
+    });
+  }
+
+  return buckets;
+}
+
+function buildTasksByMonthFixed(tasks: WorkflowTask[], buckets: MonthBucket[]): MonthlyTaskCount[] {
+  return buckets.map((bucket) => ({
+    month: bucket.label,
+    count: tasks.filter((task) => task.year === bucket.year && task.month === bucket.month).length,
+  }));
+}
+
+// On-time: completedAt <= deadline. Late: completedAt > deadline. Tasks with
+// no deadline, or not yet completed, cannot be classified either way and are
+// excluded from both the numerator and denominator.
+function buildSlaTrend(tasks: WorkflowTask[], buckets: MonthBucket[]): MonthlySlaRate[] {
+  return buckets.map((bucket) => {
+    const monthTasks = tasks.filter((task) => task.year === bucket.year && task.month === bucket.month);
+    const evaluable = monthTasks.filter((task) => task.deadline !== null && task.completedAt !== null);
+    const onTime = evaluable.filter(
+      (task) => new Date(task.completedAt!).getTime() <= new Date(task.deadline!).getTime()
+    );
+    const rate = evaluable.length > 0 ? Math.round((onTime.length / evaluable.length) * 100) : 0;
+
+    return { month: bucket.label, onTimeRate: rate };
+  });
+}
+
+function buildEmployeeWorkloadRanking(
+  tasks: WorkflowTask[],
+  employees: ReportsEmployee[],
+  today: Date
+): EmployeeWorkloadRow[] {
+  return employees
+    .map((employee) => {
+      const employeeTasks = tasks.filter((task) => task.employee?.id === employee.id);
+
+      return {
+        employeeId: employee.id,
+        employeeName: `${employee.firstName} ${employee.lastName}`,
+        totalTasks: employeeTasks.length,
+        overdueTasks: employeeTasks.filter(
+          (task) => task.deadline !== null && new Date(task.deadline) < today && task.status !== "completed"
+        ).length,
+        completedTasks: employeeTasks.filter((task) => task.status === "completed").length,
+      };
+    })
+    .sort((a, b) => b.totalTasks - a.totalTasks);
+}
+
 export default function ReportsPage() {
   const [tasks, setTasks] = useState<WorkflowTask[]>([]);
   const [customers, setCustomers] = useState<ReportsCustomer[]>([]);
+  const [employees, setEmployees] = useState<ReportsEmployee[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [slaFilters, setSlaFilters] = useState<SlaDashboardFilterValues>({
+    month: null,
+    year: null,
+    employeeId: null,
+    customerId: null,
+  });
   const { toast } = useToast();
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -180,18 +310,25 @@ export default function ReportsPage() {
       setError(null);
 
       try {
-        const [workflowRes, customersRes] = await Promise.all([
+        const [workflowRes, customersRes, employeesRes] = await Promise.all([
           fetch("/api/workflow", { signal: controller.signal }),
           fetch("/api/customers", { signal: controller.signal }),
+          fetch("/api/employees", { signal: controller.signal }),
         ]);
 
         if (!workflowRes.ok) throw new Error("ไม่สามารถโหลดข้อมูลงานได้");
         if (!customersRes.ok) throw new Error("ไม่สามารถโหลดข้อมูลลูกค้าได้");
+        if (!employeesRes.ok) throw new Error("ไม่สามารถโหลดข้อมูลพนักงานได้");
 
-        const [workflowData, customersData] = await Promise.all([workflowRes.json(), customersRes.json()]);
+        const [workflowData, customersData, employeesData] = await Promise.all([
+          workflowRes.json(),
+          customersRes.json(),
+          employeesRes.json(),
+        ]);
 
         setTasks(workflowData.tasks ?? []);
         setCustomers(customersData ?? []);
+        setEmployees(employeesData ?? []);
       } catch (err) {
         if ((err as Error).name === "AbortError") return;
 
@@ -253,6 +390,43 @@ export default function ReportsPage() {
   const customersWithoutEmployee = customers
     .filter((customer) => (responsibleEmployeeByCustomer.get(customer.id) ?? UNASSIGNED_LABEL) === UNASSIGNED_LABEL)
     .map((customer) => toCustomerSummaryRow(customer, UNASSIGNED_LABEL));
+
+  // SLA & Workload Dashboard derivations
+  const slaFilteredTasks = applySlaFilters(tasks, slaFilters, true);
+
+  const slaOverdueTasks = slaFilteredTasks
+    .filter((task) => task.deadline !== null && new Date(task.deadline) < today && task.status !== "completed")
+    .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime());
+
+  const slaDueTodayTasks = slaFilteredTasks.filter(
+    (task) => isSameDay(task.deadline, today) && task.status !== "completed"
+  );
+
+  const slaUpcomingTasks = slaFilteredTasks
+    .filter((task) => {
+      if (!task.deadline) return false;
+      const diffDays = Math.ceil((new Date(task.deadline).getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      return diffDays >= 0 && diffDays <= 7 && task.status !== "completed";
+    })
+    .sort((a, b) => new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime());
+
+  const slaCompletedTasks = slaFilteredTasks.filter((task) => task.status === "completed");
+
+  const slaProductivity =
+    slaFilteredTasks.length > 0 ? Math.round((slaCompletedTasks.length / slaFilteredTasks.length) * 100) : 0;
+
+  const employeeWorkloadTasks = applySlaFilters(tasks, slaFilters, true);
+  const employeeWorkloadRanking = buildEmployeeWorkloadRanking(employeeWorkloadTasks, employees, today);
+
+  const last6MonthBuckets = getLastSixMonthBuckets(today);
+  const tasksByMonthFixed = buildTasksByMonthFixed(tasks, last6MonthBuckets);
+  const slaTrendData = buildSlaTrend(tasks, last6MonthBuckets);
+
+  const employeeFilterOptions = employees.map((employee) => ({
+    id: employee.id,
+    name: `${employee.firstName} ${employee.lastName}`,
+  }));
+  const customerFilterOptions = customers.map((customer) => ({ id: customer.id, companyName: customer.companyName }));
 
   const isEmpty = !isLoading && !error && tasks.length === 0 && customers.length === 0;
 
@@ -340,6 +514,51 @@ export default function ReportsPage() {
               <LatestCustomersTable customers={latestCustomers} />
               <HighestContractValueTable customers={highestContractValueCustomers} />
               <CustomersWithoutEmployeeTable customers={customersWithoutEmployee} />
+            </div>
+          </section>
+
+          <Separator />
+
+          <section className="space-y-6">
+            <h2 className="text-xl font-semibold">SLA & Workload Dashboard</h2>
+
+            <SlaDashboardFilters
+              employees={employeeFilterOptions}
+              customers={customerFilterOptions}
+              onApply={setSlaFilters}
+            />
+
+            <SlaWorkloadKpiCards
+              totalTasks={slaFilteredTasks.length}
+              overdueTasks={slaOverdueTasks.length}
+              dueTodayTasks={slaDueTodayTasks.length}
+              upcomingTasks={slaUpcomingTasks.length}
+              completedTasks={slaCompletedTasks.length}
+              productivity={slaProductivity}
+            />
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <TaskStatusDonutChart
+                title="สัดส่วนสถานะงาน (ตามตัวกรอง)"
+                description="กระจายงานตามสถานะ ตามตัวกรองที่เลือก"
+                data={buildTaskStatusDistribution(slaFilteredTasks)}
+              />
+              <TasksByEmployeeChart data={buildTasksByEmployee(slaFilteredTasks)} />
+              <TasksByMonthChart data={tasksByMonthFixed} />
+              <SlaTrendChart data={slaTrendData} />
+            </div>
+
+            <div className="space-y-4">
+              <OfficeHubSummaryTable title="งานค้าง 10 อันดับแรก" tasks={slaOverdueTasks.slice(0, 10).map(taskToRow)} />
+              <OfficeHubSummaryTable
+                title="ครบกำหนดวันนี้ 10 อันดับแรก"
+                tasks={slaDueTodayTasks.slice(0, 10).map(taskToRow)}
+              />
+              <OfficeHubSummaryTable
+                title="ใกล้ครบกำหนด 10 อันดับแรก"
+                tasks={slaUpcomingTasks.slice(0, 10).map(taskToRow)}
+              />
+              <EmployeeWorkloadRankingTable rows={employeeWorkloadRanking} />
             </div>
           </section>
         </>
