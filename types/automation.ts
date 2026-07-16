@@ -1,8 +1,5 @@
 export type AutomationJobType =
-  | "monthly_workflow_generation"
-  | "email_notification"
-  | "line_notification"
-  | "google_calendar_sync";
+  | "monthly_workflow_generation";
 
 export type AutomationJobStatus = "idle" | "running" | "success" | "failed";
 
