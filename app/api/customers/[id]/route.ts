@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { customerService } from "@/services/customer.service";
 import { apiErrorResponse } from "@/lib/api-error";
 import { requirePermission } from "@/lib/api-auth";
+import { customerUpdateSchema } from "@/validators/customer";
 
 type Context = {
   params: Promise<{
@@ -42,6 +43,11 @@ export async function PUT(
 
     const { id } = await params;
     const body = await request.json();
+
+    const parsed = customerUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      return apiErrorResponse("customers.update", "ข้อมูลไม่ถูกต้อง", 400);
+    }
 
     const customer = await customerService.updateCustomer(Number(id), body);
 

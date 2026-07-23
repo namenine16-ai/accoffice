@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { customerService } from "@/services/customer.service";
 import { apiErrorResponse } from "@/lib/api-error";
 import { requirePermission } from "@/lib/api-auth";
+import { customerCreateSchema } from "@/validators/customer";
 
 interface CustomerCreateBody {
   code: string;
@@ -45,6 +46,11 @@ export async function POST(request: NextRequest) {
     if (auth) return auth;
 
     const body = (await request.json()) as CustomerCreateBody;
+
+    const parsed = customerCreateSchema.safeParse(body);
+    if (!parsed.success) {
+      return apiErrorResponse("customers.create", "ข้อมูลไม่ถูกต้อง", 400);
+    }
 
     const customerData: Prisma.CustomerCreateInput = {
       code: body.code,
