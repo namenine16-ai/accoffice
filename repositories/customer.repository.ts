@@ -8,6 +8,19 @@ export const customerRepository = {
     });
   },
 
+  findAllListView() {
+    return prisma.customer.findMany({
+      orderBy: { id: "desc" },
+      select: {
+        id: true,
+        code: true,
+        companyName: true,
+        phone: true,
+        status: true,
+      },
+    });
+  },
+
   findById(id: number) {
     return prisma.customer.findUnique({
       where: { id },

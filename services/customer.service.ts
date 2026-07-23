@@ -3,13 +3,21 @@ import { workflowRepository } from "@/repositories/workflow.repository";
 import { documentRepository } from "@/repositories/document.repository";
 import { taxTaskRepository } from "@/repositories/tax-task.repository";
 import { activityService } from "@/services/activity.service";
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 
 export class CustomerServiceError extends Error {}
+
+function isDuplicateKey(error: unknown) {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
+}
 
 export const customerService = {
   getAllCustomers() {
     return customerRepository.findAll();
+  },
+
+  getCustomerList() {
+    return customerRepository.findAllListView();
   },
 
   getCustomerById(id: number) {
@@ -17,7 +25,15 @@ export const customerService = {
   },
 
   async createCustomer(data: Prisma.CustomerCreateInput) {
-    const customer = await customerRepository.create(data);
+    let customer;
+    try {
+      customer = await customerRepository.create(data);
+    } catch (error) {
+      if (isDuplicateKey(error)) {
+        throw new CustomerServiceError("รหัสลูกค้าหรือเลขผู้เสียภาษีนี้มีอยู่ในระบบแล้ว");
+      }
+      throw error;
+    }
 
     await activityService.logActivity({
       action: "customer.created",
@@ -28,7 +44,15 @@ export const customerService = {
   },
 
   async updateCustomer(id: number, data: Prisma.CustomerUpdateInput) {
-    const customer = await customerRepository.update(id, data);
+    let customer;
+    try {
+      customer = await customerRepository.update(id, data);
+    } catch (error) {
+      if (isDuplicateKey(error)) {
+        throw new CustomerServiceError("รหัสลูกค้าหรือเลขผู้เสียภาษีนี้มีอยู่ในระบบแล้ว");
+      }
+      throw error;
+    }
 
     await activityService.logActivity({
       action: "customer.updated",

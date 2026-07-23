@@ -15,13 +15,26 @@ function isRecordNotFound(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2025";
 }
 
+function parseCustomerId(id: string): number | null {
+  const parsed = Number(id);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
+}
+
 export async function GET(
-  _request: Request,
+  request: NextRequest,
   { params }: Context
 ) {
   try {
+    const auth = await requirePermission(request, "customers:view");
+    if (auth) return auth;
+
     const { id } = await params;
-    const customer = await customerService.getCustomerById(Number(id));
+    const customerId = parseCustomerId(id);
+    if (customerId === null) {
+      return apiErrorResponse("customers.getById", "รหัสลูกค้าไม่ถูกต้อง", 400);
+    }
+
+    const customer = await customerService.getCustomerById(customerId);
 
     if (!customer) {
       return apiErrorResponse("customers.getById", "ไม่พบข้อมูลลูกค้า", 404);
@@ -42,6 +55,11 @@ export async function PUT(
     if (auth) return auth;
 
     const { id } = await params;
+    const customerId = parseCustomerId(id);
+    if (customerId === null) {
+      return apiErrorResponse("customers.update", "รหัสลูกค้าไม่ถูกต้อง", 400);
+    }
+
     const body = await request.json();
 
     const parsed = customerUpdateSchema.safeParse(body);
@@ -49,10 +67,14 @@ export async function PUT(
       return apiErrorResponse("customers.update", "ข้อมูลไม่ถูกต้อง", 400);
     }
 
-    const customer = await customerService.updateCustomer(Number(id), body);
+    const customer = await customerService.updateCustomer(customerId, body);
 
     return NextResponse.json(customer);
   } catch (error) {
+    if (error instanceof CustomerServiceError) {
+      return apiErrorResponse("customers.update", error.message, 409);
+    }
+
     if (isRecordNotFound(error)) {
       return apiErrorResponse("customers.update", "ไม่พบข้อมูลลูกค้า", 404);
     }
@@ -70,8 +92,12 @@ export async function DELETE(
     if (auth) return auth;
 
     const { id } = await params;
+    const customerId = parseCustomerId(id);
+    if (customerId === null) {
+      return apiErrorResponse("customers.delete", "รหัสลูกค้าไม่ถูกต้อง", 400);
+    }
 
-    await customerService.deleteCustomer(Number(id));
+    await customerService.deleteCustomer(customerId);
 
     return NextResponse.json({
       success: true,

@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { NextResponse, type NextRequest } from "next/server";
-import { customerService } from "@/services/customer.service";
+import { customerService, CustomerServiceError } from "@/services/customer.service";
 import { apiErrorResponse } from "@/lib/api-error";
 import { requirePermission } from "@/lib/api-auth";
 import { customerCreateSchema } from "@/validators/customer";
@@ -31,8 +31,11 @@ interface CustomerCreateBody {
   googleDriveFolder?: string | null;
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const auth = await requirePermission(request, "customers:view");
+    if (auth) return auth;
+
     const customers = await customerService.getAllCustomers();
 
     return NextResponse.json(customers);
@@ -82,6 +85,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(customer, { status: 201 });
   } catch (error) {
+    if (error instanceof CustomerServiceError) {
+      return apiErrorResponse("customers.create", error.message, 409);
+    }
+
     return apiErrorResponse("customers.create", "บันทึกลูกค้าไม่สำเร็จ", 500, error);
   }
 }

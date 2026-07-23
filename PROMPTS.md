@@ -1,3 +1,42 @@
+---
+
+# Prompt History
+
+This section records significant changes to the project's AI development workflow and prompt engineering standards.
+
+## 2026-07-11
+
+### Added
+- FAST MODE v2 workflow
+- Scope Audit before every commit
+- Backend / UI / Docs commit separation
+- Security verification checklist
+- Documentation workflow (ROADMAP, RELEASE_CHECKLIST, SECURITY, CONTRIBUTING)
+- Changelog maintenance workflow
+
+### Improved
+- Commit approval workflow
+- Verification process before git push
+- Functional testing workflow
+- API verification workflow
+- Documentation review workflow
+
+### Security
+- Added rule to never serialize sensitive User fields.
+- Require explicit Prisma `select` when returning User data.
+- Added API security verification before commits.
+
+---
+
+## 2026-07-05
+
+### Initial Release
+- Initial Claude Code prompts
+- Repository → Service → API → UI architecture rules
+- Git workflow
+- Development standards
+- Basic verification checklist
+
 # FAST MODE v2 — AccOffice
 
 You are working on the AccOffice project.

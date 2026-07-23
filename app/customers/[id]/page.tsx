@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CustomerRecentDocuments } from "@/components/document/CustomerRecentDocuments";
+import { Can } from "@/components/auth/Can";
 import { CUSTOMER_STATUSES, type CustomerDetail } from "@/types/customer";
 
 interface CustomerDetailProps {
@@ -37,9 +38,11 @@ export default async function CustomerDetailPage({ params }: CustomerDetailProps
           <p className="text-sm text-muted-foreground mt-1">รายละเอียดลูกค้าและข้อมูลบริการ</p>
         </div>
         <div className="flex gap-2">
-          <Link href={`/customers/edit/${customer.id}`}>
-            <Button>แก้ไข</Button>
-          </Link>
+          <Can permission="customers:edit">
+            <Link href={`/customers/edit/${customer.id}`}>
+              <Button>แก้ไข</Button>
+            </Link>
+          </Can>
           <Link href="/customers">
             <Button variant="outline">กลับไป</Button>
           </Link>

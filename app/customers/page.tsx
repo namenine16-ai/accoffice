@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/components/ui/use-toast";
 import CustomerTable from "@/components/customer/CustomerTable";
+import { Can } from "@/components/auth/Can";
 import type { CustomerRow } from "@/types/customer";
 
 export default function CustomersPage() {
@@ -23,7 +24,7 @@ export default function CustomersPage() {
       setError(null);
 
       try {
-        const res = await fetch("/api/customers");
+        const res = await fetch("/api/customers/list");
         if (!res.ok) {
           throw new Error("ไม่สามารถโหลดข้อมูลลูกค้าได้");
         }
@@ -56,7 +57,7 @@ export default function CustomersPage() {
 
         toast({ title: "ลบลูกค้าสำเร็จ", variant: "success" });
         void (async () => {
-          const refresh = await fetch("/api/customers");
+          const refresh = await fetch("/api/customers/list");
           if (refresh.ok) {
             const data = await refresh.json();
             setCustomers(data);
@@ -77,9 +78,11 @@ export default function CustomersPage() {
           <h1 className="text-3xl font-bold">👥 รายชื่อลูกค้า</h1>
           <p className="text-sm text-muted-foreground mt-1">จัดการข้อมูลลูกค้าทั้งหมดจากที่นี่</p>
         </div>
-        <Link href="/customers/new">
-          <Button>➕ เพิ่มลูกค้า</Button>
-        </Link>
+        <Can permission="customers:create">
+          <Link href="/customers/new">
+            <Button>➕ เพิ่มลูกค้า</Button>
+          </Link>
+        </Can>
       </div>
 
       {error ? (

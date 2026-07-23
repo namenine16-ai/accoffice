@@ -33,6 +33,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Can } from "@/components/auth/Can";
 import { CUSTOMER_STATUSES, type CustomerRow } from "@/types/customer";
 
 interface CustomerTableProps {
@@ -86,9 +87,11 @@ export default function CustomerTable({ customers, onDeleteCustomer }: CustomerT
               setPage(1);
             }}
           />
-          <Link href="/customers/new">
-            <Button>เพิ่มลูกค้า</Button>
-          </Link>
+          <Can permission="customers:create">
+            <Link href="/customers/new">
+              <Button>เพิ่มลูกค้า</Button>
+            </Link>
+          </Can>
         </div>
       </CardHeader>
       <CardContent>
@@ -125,42 +128,48 @@ export default function CustomerTable({ customers, onDeleteCustomer }: CustomerT
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                      <DropdownMenuItem>
-                        <Link href={`/customers/edit/${customer.id}`}>แก้ไข</Link>
-                      </DropdownMenuItem>
+                      <Can permission="customers:edit">
+                        <DropdownMenuItem>
+                          <Link href={`/customers/edit/${customer.id}`}>แก้ไข</Link>
+                        </DropdownMenuItem>
+                      </Can>
                       <DropdownMenuItem>
                         <Link href={`/customers/${customer.id}`}>ดูรายละเอียด</Link>
                       </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <AlertDialog
-                        open={deletingCustomer?.id === customer.id}
-                        onOpenChange={(isOpen) => !isOpen && setDeletingCustomer(null)}
-                      >
-                        <AlertDialogTrigger>
-                          <DropdownMenuItem onClick={() => setDeletingCustomer(customer)}>
-                            ลบ
-                          </DropdownMenuItem>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              คุณแน่ใจหรือไม่ว่าจะลบลูกค้า {customer.companyName}?
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={async () => {
-                                await onDeleteCustomer(customer.id);
-                                setDeletingCustomer(null);
-                              }}
-                            >
-                              ลบ
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
+                      <Can permission="customers:delete">
+                        <>
+                          <DropdownMenuSeparator />
+                          <AlertDialog
+                            open={deletingCustomer?.id === customer.id}
+                            onOpenChange={(isOpen) => !isOpen && setDeletingCustomer(null)}
+                          >
+                            <AlertDialogTrigger>
+                              <DropdownMenuItem onClick={() => setDeletingCustomer(customer)}>
+                                ลบ
+                              </DropdownMenuItem>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>ยืนยันการลบ</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  คุณแน่ใจหรือไม่ว่าจะลบลูกค้า {customer.companyName}?
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>ยกเลิก</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={async () => {
+                                    await onDeleteCustomer(customer.id);
+                                    setDeletingCustomer(null);
+                                  }}
+                                >
+                                  ลบ
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </>
+                      </Can>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
