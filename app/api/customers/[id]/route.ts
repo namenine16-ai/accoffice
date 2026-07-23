@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { NextResponse, type NextRequest } from "next/server";
-import { customerService } from "@/services/customer.service";
+import { customerService, CustomerServiceError } from "@/services/customer.service";
 import { apiErrorResponse } from "@/lib/api-error";
 import { requirePermission } from "@/lib/api-auth";
 import { customerUpdateSchema } from "@/validators/customer";
@@ -77,6 +77,10 @@ export async function DELETE(
       success: true,
     });
   } catch (error) {
+    if (error instanceof CustomerServiceError) {
+      return apiErrorResponse("customers.delete", error.message, 409);
+    }
+
     if (isRecordNotFound(error)) {
       return apiErrorResponse("customers.delete", "ไม่พบข้อมูลลูกค้า", 404);
     }
