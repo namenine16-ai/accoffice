@@ -1,4 +1,5 @@
 import * as z from "zod";
+import { CUSTOMER_STATUSES } from "@/types/customer";
 
 export const customerCreateSchema = z.object({
   code: z.string().min(1, "รหัสลูกค้าจำเป็นต้องระบุ"),
@@ -20,7 +21,7 @@ export const customerCreateSchema = z.object({
   accountingPeriod: z.string().optional().nullable(),
   serviceFee: z.coerce.number().min(0, "ค่าบริการต้องไม่ติดลบ").optional().default(0),
   startDate: z.string().optional().nullable(),
-  status: z.string().optional().default("ใช้งาน"),
+  status: z.enum(CUSTOMER_STATUSES).optional().default(CUSTOMER_STATUSES[0]),
   note: z.string().optional().nullable(),
   googleDriveFolder: z.string().optional().nullable(),
 });

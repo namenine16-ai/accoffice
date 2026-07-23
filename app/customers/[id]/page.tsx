@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CustomerRecentDocuments } from "@/components/document/CustomerRecentDocuments";
-import type { CustomerDetail } from "@/types/customer";
+import { CUSTOMER_STATUSES, type CustomerDetail } from "@/types/customer";
 
 interface CustomerDetailProps {
   params: Promise<{
@@ -70,7 +70,7 @@ export default async function CustomerDetailPage({ params }: CustomerDetailProps
             <p><span className="font-medium">วันที่เริ่ม:</span> {customer.startDate ? new Date(customer.startDate).toLocaleDateString() : "-"}</p>
             <p>
               <span className="font-medium">สถานะ:</span>{" "}
-              <Badge variant={customer.status === "ใช้งาน" ? "default" : "secondary"}>
+              <Badge variant={customer.status === CUSTOMER_STATUSES[0] ? "default" : "secondary"}>
                 {customer.status}
               </Badge>
             </p>

@@ -1,3 +1,6 @@
+export const CUSTOMER_STATUSES = ["ใช้งาน", "ไม่ใช้งาน", "รอดำเนินการ"] as const;
+export type CustomerStatus = (typeof CUSTOMER_STATUSES)[number];
+
 export interface CustomerRow {
   id: number;
   code: string;

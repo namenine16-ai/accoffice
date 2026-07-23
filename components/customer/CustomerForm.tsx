@@ -11,9 +11,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   customerCreateSchema,
   customerUpdateSchema,
 } from "@/validators/customer";
+import { CUSTOMER_STATUSES, type CustomerStatus } from "@/types/customer";
 import type { z } from "zod";
 
 type CustomerFormValues = z.infer<typeof customerCreateSchema>;
@@ -43,7 +51,7 @@ const defaultValues: CustomerFormValues = {
   accountingPeriod: "",
   serviceFee: 0,
   startDate: "",
-  status: "ใช้งาน",
+  status: CUSTOMER_STATUSES[0],
   note: "",
   googleDriveFolder: "",
 };
@@ -59,6 +67,8 @@ export default function CustomerForm({ initialValues, customerId }: CustomerForm
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm<CustomerFormValues>({
     resolver,
@@ -69,6 +79,10 @@ export default function CustomerForm({ initialValues, customerId }: CustomerForm
   });
 
   useEffect(() => {
+    register("status");
+  }, [register]);
+
+  useEffect(() => {
     if (initialValues) {
       reset({
         ...defaultValues,
@@ -76,6 +90,8 @@ export default function CustomerForm({ initialValues, customerId }: CustomerForm
       });
     }
   }, [initialValues, reset]);
+
+  const status = watch("status");
 
   async function onSubmit(data: CustomerFormValues) {
     const apiUrl = customerId ? `/api/customers/${customerId}` : "/api/customers";
@@ -132,7 +148,22 @@ export default function CustomerForm({ initialValues, customerId }: CustomerForm
             </div>
             <div className="space-y-2">
               <Label htmlFor="status">สถานะ</Label>
-              <Input id="status" {...register("status")} />
+              <Select
+                value={status}
+                onValueChange={(value) => setValue("status", (value ?? CUSTOMER_STATUSES[0]) as CustomerStatus)}
+              >
+                <SelectTrigger id="status" className="w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CUSTOMER_STATUSES.map((statusOption) => (
+                    <SelectItem key={statusOption} value={statusOption}>
+                      {statusOption}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.status && <p className="text-xs text-destructive">{errors.status.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="serviceFee">ค่าบริการ</Label>

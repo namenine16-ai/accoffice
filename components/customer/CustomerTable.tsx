@@ -33,17 +33,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import type { CustomerRow } from "@/types/customer";
+import { CUSTOMER_STATUSES, type CustomerRow } from "@/types/customer";
 
 interface CustomerTableProps {
   customers: CustomerRow[];
   onDeleteCustomer: (id: number) => Promise<void>;
 }
 
+const [ACTIVE_STATUS, INACTIVE_STATUS, PENDING_STATUS] = CUSTOMER_STATUSES;
+
 const statusVariantMap: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-  ใช้งาน: "default",
-  "ไม่ใช้งาน": "destructive",
-  รอดำเนินการ: "secondary",
+  [ACTIVE_STATUS]: "default",
+  [INACTIVE_STATUS]: "destructive",
+  [PENDING_STATUS]: "secondary",
 };
 
 const PAGE_SIZE = 10;

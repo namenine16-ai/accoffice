@@ -4,6 +4,7 @@ import { customerService } from "@/services/customer.service";
 import { apiErrorResponse } from "@/lib/api-error";
 import { requirePermission } from "@/lib/api-auth";
 import { customerCreateSchema } from "@/validators/customer";
+import { CUSTOMER_STATUSES } from "@/types/customer";
 
 interface CustomerCreateBody {
   code: string;
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
       accountingPeriod: body.accountingPeriod || null,
       serviceFee: body.serviceFee ?? 0,
       startDate: body.startDate ? new Date(body.startDate) : null,
-      status: body.status || "ใช้งาน",
+      status: body.status || CUSTOMER_STATUSES[0],
       note: body.note || null,
       googleDriveFolder: body.googleDriveFolder || null,
     };
